@@ -10,22 +10,22 @@ El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene usua
 
 ### Secrets compatibles
 
-El workflow reutiliza los secrets ya creados. No es necesario recrearlos si usan estos alias.
+El endpoint confirmado por el usuario es **single-4650.banahosting.com:22**. El workflow reutiliza `BANAHOST_SSH_HOST`, actualizado por el usuario; si falta, usa ese hostname público como fallback. Prueba primero el puerto 22. Los demás secrets se reutilizan con estos alias.
 
 Si el puerto 22 no entrega una clave SSH, se comprueba también el puerto 2222 del mismo servidor. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
 
 | Uso | Nombre principal | Alias admitidos |
 | --- | --- | --- |
-| Host SSH | `BANAHOST_SSH_HOST` | `BANAHOST_HOST`, `SSH_HOST` |
 | Usuario SSH | `BANAHOST_SSH_USER` | `BANAHOST_USER`, `SSH_USER`, `SSH_USERNAME` |
 | Clave privada | `BANAHOST_SSH_PRIVATE_KEY` | `BANAHOST_SSH_KEY`, `BANAHOST_PRIVATE_KEY`, `BANAHOST_KEY`, `SSH_PRIVATE_KEY`, `SSH_KEY` |
-| Puerto (22 si no está configurado) | `BANAHOST_SSH_PORT` | `BANAHOST_PORT`, `SSH_PORT` |
 | Ruta opcional de WordPress | `BANAHOST_WP_PATH` | `BANAHOST_PATH`, `WP_PATH`, `SSH_PATH`; también variable `BANAHOST_WP_PATH` |
 | Claves públicas verificadas del servidor | `BANAHOST_SSH_KNOWN_HOSTS` | `BANAHOST_KNOWN_HOSTS`, `SSH_KNOWN_HOSTS` |
 | Alternativa: huella SHA256 verificada del servidor | `BANAHOST_SSH_FINGERPRINT` | `BANAHOST_FINGERPRINT`, `SSH_HOST_FINGERPRINT`, `SSH_FINGERPRINT` |
 | Passphrase, solo si la clave está cifrada | `BANAHOST_SSH_PASSPHRASE` | `BANAHOST_PASSPHRASE`, `SSH_PASSPHRASE` |
 
 Las claves autorizadas se obtienen en cPanel → Acceso SSH → Administrar claves SSH. El secret de clave privada contiene la clave completa, incluidos encabezado y cierre; no la clave pública. La confianza del servidor usa `known_hosts` o una huella SHA256 comprobada con BanaHosting. Si falta, el workflow consulta las huellas públicas, las conserva para verificación y se detiene antes de autenticarse. Una clave escaneada no se acepta automáticamente como verificada.
+
+El diagnóstico previo diferencia DNS, conexión TCP rechazada, timeout, cierre antes de la cabecera y respuesta SSH. Una cabecera SSH demuestra que el servicio es accesible desde ese runner. Un rechazo o timeout por sí solo no prueba que el plan de hosting prohíba SSH: esa política debe confirmarse con BanaHosting.
 
 Los secrets se introducen solo en GitHub → repositorio → Settings → Secrets and variables → Actions; nunca en el código ni en el chat. Si existen únicamente como secrets de un Environment de GitHub, el job debe vincularse a ese Environment antes de usarlos.
 
