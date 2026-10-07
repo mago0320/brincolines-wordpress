@@ -2,6 +2,11 @@
 # Run on the Actions runner. No production files are written.
 set -euo pipefail
 umask 077
+fail() {
+  local code=$1 message=$2
+  printf '::error title=Diagnóstico SSH::%s\n' "$message" >&2
+  exit "$code"
+}
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 mkdir -p .local/audit
 
@@ -10,15 +15,15 @@ for entry in 'BH_HOST:BANAHOST_SSH_HOST' 'BH_USER:BANAHOST_SSH_USER' 'BH_KEY:BAN
   variable=${entry%%:*}
   label=${entry#*:}
   if [[ -z ${!variable:-} ]]; then
-    printf 'Falta el secret %s o uno de sus alias documentados.\n' "$label" >&2
+    printf '::error title=Secret requerido::Falta el secret %s o uno de sus alias documentados.\n' "$label" >&2
     missing=1
   fi
 done
 [[ $missing == 0 ]] || exit 2
-[[ $BH_HOST =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || { echo 'Hostname SSH no válido.' >&2; exit 2; }
-[[ $BH_USER =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$ ]] || { echo 'Usuario SSH no válido.' >&2; exit 2; }
+[[ $BH_HOST =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || fail 2 'Hostname SSH no válido.'
+[[ $BH_USER =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$ ]] || fail 2 'Usuario SSH no válido.'
 BH_PORT=${BH_PORT:-22}
-[[ $BH_PORT =~ ^[0-9]{1,5}$ ]] && ((10#$BH_PORT >= 1 && 10#$BH_PORT <= 65535)) || { echo 'Puerto SSH no válido.' >&2; exit 2; }
+[[ $BH_PORT =~ ^[0-9]{1,5}$ ]] && ((10#$BH_PORT >= 1 && 10#$BH_PORT <= 65535)) || fail 2 'Puerto SSH no válido.'
 
 state=$(mktemp -d "${RUNNER_TEMP:-/tmp}/brincos-ssh.XXXXXXXX")
 agent_started=0
@@ -33,28 +38,38 @@ if [[ -n ${BH_KNOWN_HOSTS:-} ]]; then
   lookup=$BH_HOST
   [[ $BH_PORT == 22 ]] || lookup="[$BH_HOST]:$BH_PORT"
   ssh-keygen -F "$lookup" -f "$state/known_hosts" >/dev/null || {
-    echo 'El secret known_hosts no contiene el servidor y puerto configurados.' >&2; exit 3;
+    fail 3 'El secret known_hosts no contiene el servidor y puerto configurados.'
   }
 else
   # A scan alone does not establish server identity. Authenticate only after
   # matching a fingerprint independently supplied through GitHub settings.
   if ! ssh-keyscan -T 10 -p "$BH_PORT" -- "$BH_HOST" > "$state/scanned_hosts" 2> "$state/scan-error"; then
-    echo 'No se pudo consultar la clave pública del servidor SSH.' >&2; exit 3
+    reason=$(python3 - "$state/scan-error" <<'PY'
+import pathlib, sys
+s = pathlib.Path(sys.argv[1]).read_text(errors='replace').lower()
+reasons = (('connection refused', 'El puerto rechaza la conexión.'),
+           ('timed out', 'El servidor no respondió dentro del plazo.'),
+           ('no route to host', 'No existe ruta de red hacia el servidor.'),
+           ('name or service not known', 'El hostname no se pudo resolver.'),
+           ('temporary failure in name resolution', 'Falló la resolución DNS.'))
+print(next((text for marker, text in reasons if marker in s), 'No se recibió una clave pública SSH del servidor configurado.'))
+PY
+)
+    fail 3 "No se pudo consultar la clave pública del servidor SSH. $reason"
   fi
-  [[ -s $state/scanned_hosts ]] || { echo 'El servidor SSH no respondió al consultar su clave pública.' >&2; exit 3; }
+  [[ -s $state/scanned_hosts ]] || fail 3 'El servidor SSH no respondió al consultar su clave pública.'
   ssh-keygen -lf "$state/scanned_hosts" | awk '{print $2}' > .local/audit/host-key-fingerprints.txt
   if [[ -z ${BH_FINGERPRINT:-} ]]; then
-    echo 'Falta confianza del servidor: BANAHOST_SSH_KNOWN_HOSTS o BANAHOST_SSH_FINGERPRINT.' >&2
     echo 'Huellas observadas (aún sin verificar con BanaHosting):' >&2
-    cat .local/audit/host-key-fingerprints.txt >&2
-    exit 3
+    while IFS= read -r fingerprint; do printf '::notice title=Huella SSH observada::%s\n' "$fingerprint" >&2; done < .local/audit/host-key-fingerprints.txt
+    fail 3 'Falta confianza del servidor: BANAHOST_SSH_KNOWN_HOSTS o BANAHOST_SSH_FINGERPRINT.'
   fi
   export BH_FINGERPRINT
   python3 - "$state/scanned_hosts" "$state/known_hosts" <<'PY'
 import hmac, os, pathlib, re, subprocess, sys, tempfile
 expected = os.environ['BH_FINGERPRINT'].strip()
 if not re.fullmatch(r'SHA256:[A-Za-z0-9+/]{43}', expected):
-    raise SystemExit('La huella debe tener formato SHA256:...')
+    raise SystemExit('::error title=Identidad SSH::La huella debe tener formato SHA256:...')
 matches = []
 for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
     if line.startswith('#') or not line.strip():
@@ -66,7 +81,7 @@ for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
     if hmac.compare_digest(fingerprint, expected):
         matches.append(line)
 if not matches:
-    raise SystemExit('La huella del servidor NO coincide con la configurada. Se canceló la conexión.')
+    raise SystemExit('::error title=Identidad SSH::La huella del servidor NO coincide con la configurada. Se canceló la conexión.')
 pathlib.Path(sys.argv[2]).write_text('\n'.join(matches) + '\n')
 PY
 fi
@@ -82,8 +97,7 @@ SH
 chmod 700 "$state/askpass"
 export BH_PASSPHRASE="${BH_PASSPHRASE:-}" SSH_ASKPASS="$state/askpass" SSH_ASKPASS_REQUIRE=force DISPLAY=brincos-ssh
 ssh-add "$state/private_key" </dev/null > "$state/key-output" 2>&1 || {
-  echo 'No se pudo cargar la clave privada. Comprueba el formato y la passphrase, si está cifrada.' >&2
-  exit 4
+  fail 4 'No se pudo cargar la clave privada. Comprueba el formato y la passphrase, si está cifrada.'
 }
 ssh-add -L > "$state/private_key.pub"
 chmod 600 "$state/private_key.pub"
@@ -92,12 +106,29 @@ root_hint=${BH_ROOT_HINT:-}
 # Quote the optional path for the remote shell; never interpolate secret values
 # into shell source or log the resulting command.
 printf -v quoted_hint '%q' "$root_hint"
-ssh -p "$BH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+if ! ssh -p "$BH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
   -o UserKnownHostsFile="$state/known_hosts" -o GlobalKnownHostsFile=/dev/null \
   -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 \
   -o ForwardAgent=no -o IdentitiesOnly=yes -i "$state/private_key" \
   "$BH_USER@$BH_HOST" "bash -s -- brincolinesjumping.com $quoted_hint" \
-  < scripts/discover-wordpress.sh > .local/audit/wordpress-inventory.json
+  < scripts/discover-wordpress.sh > .local/audit/wordpress-inventory.json 2> "$state/ssh-error"; then
+  reason=$(python3 - "$state/ssh-error" <<'PY'
+import pathlib, sys
+s = pathlib.Path(sys.argv[1]).read_text(errors='replace')
+markers = (('Permission denied', 'El servidor rechazó la autenticación con la clave autorizada.'),
+           ('Host key verification failed', 'La clave pública del servidor no coincide.'),
+           ('Connection refused', 'El puerto SSH rechaza la conexión.'),
+           ('Connection timed out', 'La conexión SSH agotó el plazo.'),
+           ('no corresponde', 'La ruta configurada no corresponde al dominio autorizado.'),
+           ('instalaciones coincidentes', 'No se encontró una única instalación del dominio autorizado.'),
+           ('multisite', 'La instalación es multisite y necesita un alcance por sitio.'),
+           ('WP-CLI no se encuentra', 'WP-CLI no se encuentra en las rutas habituales.'),
+           ('búsqueda de instalaciones quedó incompleta', 'La búsqueda de instalaciones quedó incompleta.'))
+print(next((text for marker, text in markers if marker in s), 'Falló la conexión o el inventario remoto; revisa el log del paso SSH.'))
+PY
+)
+  fail 5 "$reason"
+fi
 
 python3 - <<'PY'
 import json, pathlib
