@@ -2,6 +2,7 @@
 """Read-only, HTTPS-verified cPanel discovery for one authorized domain."""
 import base64
 import getpass
+from http.cookies import SimpleCookie
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -55,6 +56,44 @@ def api_call(user, token, module, function, params, password_auth=False):
     return result.get('data')
 
 
+class PanelSession:
+    """Keep a verified cPanel web session in memory on the fixed origin only."""
+    def __init__(self, user, password):
+        self.base = 'https://' + HOST + ':2083'
+        request = urllib.request.Request(self.base + '/login/?login_only=1',
+            data=urllib.parse.urlencode({'user': user, 'pass': password}).encode(),
+            headers={'Accept': 'application/json'})
+        with secure_open(request) as response:
+            cookies = SimpleCookie()
+            for header in response.headers.get_all('Set-Cookie', []):
+                cookies.load(header)
+            payload = json.loads(response.read(2_000_000))
+        if payload.get('tfa_required') or payload.get('twofactor_required'):
+            raise PanelError('cpanel_two_factor_required')
+        if payload.get('status') != 1:
+            raise PanelError('cpanel_login_rejected')
+        self.session = payload.get('security_token', '')
+        if not isinstance(self.session, str) or not re.fullmatch(r'/cpsess[0-9]+', self.session):
+            raise PanelError('unexpected_session_token')
+        cookie = cookies.get('cpsession')
+        if cookie is None or not cookie.value:
+            raise PanelError('missing_session_cookie')
+        # Explicitly scope this cookie to the fixed HTTPS origin. cPanel's port
+        # attribute can cause standard cookie jars to reject it behind a proxy.
+        self.cookie = 'cpsession=' + cookie.coded_value
+
+    def api_call(self, module, function, params):
+        scoped_endpoint = endpoint(module, function, params)
+        request = urllib.request.Request(self.base + self.session + scoped_endpoint[len(self.base):],
+            headers={'Accept': 'application/json', 'Cookie': self.cookie})
+        with secure_open(request) as response:
+            payload = json.loads(response.read(2_000_000))
+        result = payload.get('result', payload)
+        if result.get('status') != 1:
+            raise PanelError('cpanel_api_operation_rejected')
+        return result.get('data')
+
+
 def validate_domain(data):
     if not isinstance(data, dict) or data.get('domain', '').lower().rstrip('.') != DOMAIN:
         raise PanelError('returned_domain_out_of_scope')
@@ -85,10 +124,21 @@ def discover(user, token, password=''):
             raise PanelError('missing_or_invalid_cpanel_user')
         credential = token or password
         auth_options = {'password_auth':True} if not token else {}
-        data = api_call(user, credential, 'DomainInfo', 'single_domain_data', {'domain': DOMAIN}, **auth_options)
+        def call(module, function, params):
+            return api_call(user, credential, module, function, params, **auth_options)
+        try:
+            data = call('DomainInfo', 'single_domain_data', {'domain': DOMAIN})
+            report['authentication_method'] = 'api_token' if token else 'basic_https'
+        except urllib.error.HTTPError as error:
+            if error.code != 401 or token or not password:
+                raise
+            session = PanelSession(user, password)
+            call = session.api_call
+            data = call('DomainInfo', 'single_domain_data', {'domain': DOMAIN})
+            report['authentication_method'] = 'cpanel_web_session'
         root = validate_domain(data)
         report.update(authenticated=True, endpoint_reachable=True, tls_verified=True, documentroot=root)
-        files = api_call(user, credential, 'Fileman', 'list_files', {'dir': root}, **auth_options)
+        files = call('Fileman', 'list_files', {'dir': root})
         if not isinstance(files, list):
             raise PanelError('unexpected_directory_listing')
         names = {str(item.get('file', item.get('name', ''))) for item in files if isinstance(item, dict)}
@@ -124,7 +174,10 @@ def main():
             if report.get(field): report[field]='[private]'
     output = Path('.local/audit')
     output.mkdir(parents=True, exist_ok=True)
-    (output / 'cpanel-discovery.json').write_text(json.dumps(report, indent=2) + '\n')
+    output.chmod(0o700)
+    report_file = output / 'cpanel-discovery.json'
+    report_file.write_text(json.dumps(report, indent=2) + '\n')
+    report_file.chmod(0o600)
     print('::notice title=Alternativa cPanel HTTPS::' + json.dumps(report, separators=(',', ':')))
 
 

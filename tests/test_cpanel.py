@@ -70,6 +70,40 @@ class PanelTests(unittest.TestCase):
         with self.assertRaises(panel.PanelError):
             panel.endpoint('Fileman','save_file_content',{})
 
+    def test_basic_rejection_uses_existing_password_for_session(self):
+        rejected=panel.urllib.error.HTTPError('https://example.invalid',401,'Unauthorized',{},None)
+        session=MagicMock()
+        session.api_call.side_effect=[{'domain':panel.DOMAIN,'documentroot':'/home/user/site'},[]]
+        with patch.object(panel,'api_call',side_effect=rejected), patch.object(panel,'PanelSession',return_value=session) as login:
+            report=panel.discover('user','','private-password')
+        login.assert_called_once_with('user','private-password')
+        self.assertTrue(report['authenticated'])
+        self.assertEqual(report['authentication_method'],'cpanel_web_session')
+        self.assertNotIn('private-password',json.dumps(report))
+
+    def test_session_cookie_and_token_stay_on_fixed_origin(self):
+        response=MagicMock()
+        response.__enter__.return_value.headers.get_all.return_value=['cpsession=private-session; path=/; secure; HttpOnly; port=2083']
+        response.__enter__.return_value.read.side_effect=[json.dumps({'status':1,'security_token':'/cpsess123456'}).encode(),json.dumps({'result':{'status':1,'data':[]}}).encode()]
+        with patch.object(panel,'secure_open',return_value=response) as request:
+            session=panel.PanelSession('user','private-password')
+            session.api_call('Fileman','list_files',{'dir':'/home/user/site'})
+            with self.assertRaises(panel.PanelError):
+                session.api_call('Fileman','save_file_content',{})
+        self.assertEqual(request.call_count,2)
+        call=request.call_args.args[0]
+        self.assertTrue(call.full_url.startswith('https://'+panel.HOST+':2083/cpsess123456/execute/'))
+        self.assertEqual(call.get_header('Cookie'),'cpsession=private-session')
+
+    def test_rejected_session_login_cannot_access_files(self):
+        response=MagicMock()
+        response.__enter__.return_value.headers.get_all.return_value=[]
+        response.__enter__.return_value.read.return_value=json.dumps({'status':0}).encode()
+        with patch.object(panel,'secure_open',return_value=response) as request:
+            with self.assertRaisesRegex(panel.PanelError,'cpanel_login_rejected'):
+                panel.PanelSession('user','private-password')
+        self.assertEqual(request.call_count,1)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,42 @@
+name: BanaHosting - WordPress por cPanel HTTPS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brincolinesjumping-cpanel
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Obtener scripts
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Preparar cliente HTTPS de Terminal
+        run: |
+          python3 -m venv .local/venv
+          .local/venv/bin/python -m pip install --disable-pip-version-check -r requirements-ops.txt
+          .local/venv/bin/python -m unittest discover -s tests -p 'test_cpanel*.py' -v
+
+      - name: Verificar únicamente el WordPress autorizado
+        env:
+          BH_USER: ${{ secrets.BANAHOST_CPANEL_USER || secrets.BANAHOST_SSH_USER || secrets.BANAHOST_SSH_USERNAME || secrets.BANAHOST_USER || secrets.BANAHOST_USERNAME || secrets.SSH_USER || secrets.SSH_USERNAME }}
+          BH_CPANEL_PASSWORD: ${{ secrets.BANAHOST_CPANEL_PASSWORD || secrets.BANAHOST_PASSWORD || secrets.CPANEL_PASSWORD }}
+        run: .local/venv/bin/python scripts/cpanel-wordpress.py
+
+      - name: Conservar inventario sin credenciales ni rutas de cuenta
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: cpanel-wordpress-${{ github.run_id }}
+          path: .local/audit/cpanel-wordpress.json
+          if-no-files-found: ignore
+          retention-days: 1

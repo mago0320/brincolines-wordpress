@@ -1,6 +1,14 @@
 # Brincolines Jumping · WordPress existente
 
-El sitio de producción es **https://brincolinesjumping.com/**. Su HTML público referencia Kadence; la confirmación del tema activo requiere el inventario SSH. Se conserva el tema y el diseño existentes. Este repositorio no instala WordPress ni crea otro tema.
+El sitio de producción es **https://brincolinesjumping.com/**. WP-CLI confirmó **Kadence** como tema activo, portada estática ID **42** y metadatos Elementor presentes. Actualmente no hay plugins activos; antes de editar la portada debe revisarse esa situación y conservarse su contenido y diseño. Este repositorio no instala WordPress ni crea otro tema.
+
+## Acceso verificado sin SSH externo
+
+Desde Cloud funciona el inicio de sesión HTTPS de cPanel y su Terminal por WebSocket, con certificados verificados. WP-CLI ejecutado por esa Terminal confirmó `home` y `siteurl` del dominio autorizado y descartó multisite. El puerto SSH externo sigue rechazando la conexión; no es necesario seguir probando puertos.
+
+`scripts/cpanel-wordpress.py` reproduce el inventario de forma autónoma. Comprueba primero el documentroot de este dominio y los archivos WordPress; después revalida las URL desde WP-CLI antes de leer opciones. Omite el arranque de plugins y temas durante la consulta. Sus informes no contienen rutas de cuenta, contraseñas ni cookies. La sesión y sus credenciales permanecen en memoria.
+
+El workflow manual **BanaHosting - WordPress por cPanel HTTPS** usa esta vía y no prueba ningún puerto SSH. Reutiliza el usuario guardado en los secrets existentes y necesita `BANAHOST_CPANEL_PASSWORD` (también admite `BANAHOST_PASSWORD` o `CPANEL_PASSWORD`). La integración de GitHub disponible en Cloud no permite escribir secrets: ese binding debe introducirse en Settings → Secrets and variables → Actions. La verificación desde Cloud ya funciona con las credenciales proporcionadas privadamente; la disponibilidad del binding en Actions se comprueba por separado. El workflow actual solo inventaría, sin desplegar ni modificar producción.
 
 ## Acceso desde GitHub Actions
 
@@ -36,6 +44,8 @@ El diagnóstico previo diferencia DNS, conexión TCP rechazada, timeout, cierre 
 La API pública de WordPress confirmó soporte para contraseñas de aplicación y endpoints de páginas y plugins. Las operaciones de escritura requieren autenticación y capacidades del usuario. El sitio usa Elementor: no debe reemplazarse su contenido de forma que se pierda el diseño o los metadatos del editor.
 
 La alternativa admite token API o autenticación con contraseña por HTTPS. En una máquina cloud autorizada se puede ejecutar `python3 scripts/cpanel-discover.py --interactive`: ambas entradas quedan ocultas y sus valores se usan solo en memoria para la petición al servidor oficial. Los valores no se escriben en archivos, argumentos de comandos ni informes. En Actions se reutilizan bindings privados `BANAHOST_CPANEL_API_TOKEN` o `BANAHOST_CPANEL_PASSWORD` si ya existen. No se exige crear otra credencial cuando ya se dispone de una utilizable. El flujo inspeccionará las capacidades disponibles antes de decidir si también hace falta autenticación específica de WordPress. No asumas que cPanel permite ejecutar WP-CLI: esa capacidad debe comprobarse en las herramientas realmente disponibles del panel.
+
+El acceso real desde Cloud se verificó mediante la sesión web de cPanel: autenticación aceptada, dominio y documentroot comprobados y archivos WordPress presentes. Cuando Basic Auth devuelve 401, el script inicia esa sesión con la misma contraseña y consulta la API mediante su cookie en memoria. Solo envía la cookie al origen HTTPS oficial y rechaza redirecciones. Los informes locales tienen permisos privados; los artifacts públicos ocultan las rutas de cuenta. Esta verificación de Cloud no demuestra que Actions tenga los bindings de cPanel disponibles.
 
 Los secrets se introducen solo en GitHub → repositorio → Settings → Secrets and variables → Actions; nunca en el código ni en el chat. Si existen únicamente como secrets de un Environment de GitHub, el job debe vincularse a ese Environment antes de usarlos.
 
