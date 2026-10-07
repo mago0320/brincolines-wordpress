@@ -63,8 +63,19 @@ def main():
                 lab_performance=page.evaluate('()=>({...window.bjPerformance,scope:"Chrome lab, unthrottled, initial viewport"})')
             # Trigger below-fold lazy images while preserving final screenshot position.
             if not args.draft_file:
-                page.evaluate("async()=>{for(let y=0;y<document.body.scrollHeight;y+=600){scrollTo(0,y);await new Promise(r=>setTimeout(r,60))}scrollTo(0,0)}")
-                page.wait_for_function("[...document.images].every(x=>x.complete && x.naturalWidth>0)",timeout=30000)
+                # Visit each real image: fast page jumps can skip lazy-load
+                # intersections on an unthrottled hosted runner.
+                for photo in page.locator('.bj-landing img').all():
+                    photo.scroll_into_view_if_needed()
+                    try:
+                        page.wait_for_function('(x)=>x.complete && x.naturalWidth>0',arg=photo.element_handle(),timeout=30000)
+                    except Exception:
+                        missing=page.evaluate("()=>[...document.images].filter(x=>!x.complete||!x.naturalWidth).map(x=>({src:x.currentSrc||x.src,alt:x.alt,loading:x.loading}))")
+                        (args.output/'image-load-failure.json').write_text(json.dumps({'width':width,'missing':missing},ensure_ascii=False,indent=2))
+                        print(json.dumps({'scope':'public homepage','width':width,'failure':'real_image_loading','missing':missing},ensure_ascii=False))
+                        raise
+                page.evaluate('()=>Promise.all([...document.images].map(x=>x.decode()))')
+                page.evaluate('scrollTo(0,0)')
             data=page.evaluate('''() => ({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('h1').length,ctas:[...document.querySelectorAll('.wp-block-button__link')].map(a=>({width:a.getBoundingClientRect().width,height:a.getBoundingClientRect().height,href:a.href})),heroCtaBottom:document.querySelector('.bj-hero .wp-block-button__link').getBoundingClientRect().bottom,hero:document.querySelector('.bj-hero-photo img')?{loading:document.querySelector('.bj-hero-photo img').loading,priority:document.querySelector('.bj-hero-photo img').fetchPriority}:null,photoCount:document.querySelectorAll('.bj-landing img').length,pendingPlaceholders:document.querySelectorAll('.bj-pending-photo').length})''')
             data['floating']=page.locator('.bj-floating').evaluate('''x=>({text:x.textContent.trim(),position:getComputedStyle(x).position,left:x.getBoundingClientRect().left,right:x.getBoundingClientRect().right,top:x.getBoundingClientRect().top,bottom:x.getBoundingClientRect().bottom})''')
             data['layout']=page.evaluate('''()=>({headerHeight:document.querySelector('.bj-header').getBoundingClientRect().height,catalogColumns:getComputedStyle(document.querySelector('.bj-catalog')).gridTemplateColumns.split(' ').length,galleryColumns:getComputedStyle(document.querySelector('.bj-gallery')).gridTemplateColumns.split(' ').length,heroPhotoBottom:document.querySelector('.bj-hero-photo').getBoundingClientRect().bottom})''')
