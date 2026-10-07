@@ -1,0 +1,48 @@
+name: BanaHosting - localizar WordPress
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brincolinesjumping-ssh-audit
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Obtener scripts del repositorio
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Validar scripts antes de conectar
+        run: |
+          bash -n scripts/ssh-discover.sh scripts/discover-wordpress.sh
+          python3 -m unittest discover -s tests -v
+
+      - name: Conectar por SSH y localizar solo brincolinesjumping.com
+        env:
+          # Admitir nombres habituales sin leer ni imprimir los valores.
+          BH_HOST: ${{ secrets.BANAHOST_SSH_HOST || secrets.BANAHOST_HOST || secrets.SSH_HOST }}
+          BH_USER: ${{ secrets.BANAHOST_SSH_USER || secrets.BANAHOST_USER || secrets.SSH_USER || secrets.SSH_USERNAME }}
+          BH_PORT: ${{ secrets.BANAHOST_SSH_PORT || secrets.BANAHOST_PORT || secrets.SSH_PORT || '22' }}
+          BH_KEY: ${{ secrets.BANAHOST_SSH_PRIVATE_KEY || secrets.BANAHOST_SSH_KEY || secrets.BANAHOST_PRIVATE_KEY || secrets.BANAHOST_KEY || secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
+          BH_PASSPHRASE: ${{ secrets.BANAHOST_SSH_PASSPHRASE || secrets.BANAHOST_PASSPHRASE || secrets.SSH_PASSPHRASE }}
+          BH_KNOWN_HOSTS: ${{ secrets.BANAHOST_SSH_KNOWN_HOSTS || secrets.BANAHOST_KNOWN_HOSTS || secrets.SSH_KNOWN_HOSTS }}
+          BH_FINGERPRINT: ${{ secrets.BANAHOST_SSH_FINGERPRINT || secrets.BANAHOST_FINGERPRINT || secrets.SSH_HOST_FINGERPRINT || secrets.SSH_FINGERPRINT }}
+          BH_ROOT_HINT: ${{ secrets.BANAHOST_WP_PATH || secrets.BANAHOST_PATH || secrets.WP_PATH || secrets.SSH_PATH || vars.BANAHOST_WP_PATH }}
+        run: bash scripts/ssh-discover.sh
+
+      - name: Conservar inventario de esta ejecución
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: banahost-wordpress-inventory-${{ github.run_id }}
+          path: .local/audit/
+          if-no-files-found: ignore
+          retention-days: 1
