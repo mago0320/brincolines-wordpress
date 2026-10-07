@@ -194,6 +194,10 @@ try {
     bj_operation_require(count($files)===2 && isset($files['brincolines-landing.php'],$files['landing.css']),'plugin_payload_incomplete');
     if (!is_dir($plugin_dir)) bj_operation_require(mkdir($plugin_dir,0755),'plugin_directory_failed');
     if (is_file($plugin_dir.'/brincolines-landing.php')) bj_operation_require(strpos(file_get_contents($plugin_dir.'/brincolines-landing.php'),'Brincolines Jumping · Landing')!==false,'existing_plugin_not_owned');
+    // The Terminal uses umask 077 for private backups/staging. Public CSS
+    // needs traversal permissions on this owned plugin directory.
+    bj_operation_require(realpath($plugin_dir)===realpath(WP_PLUGIN_DIR).'/brincolines-landing','plugin_directory_scope');
+    bj_operation_require(chmod($plugin_dir,0755),'plugin_directory_permissions_failed');
     foreach($files as $file=>$bytes) bj_operation_write($plugin_dir.'/'.$file,$bytes,0644);
     $activated=activate_plugin($plugin,'',false,true);
     bj_operation_require(!is_wp_error($activated),'plugin_activation_failed');
