@@ -23,6 +23,12 @@ add_action('wp_enqueue_scripts', function () {
     if (!bj_landing_enabled()) return;
     wp_enqueue_style('bj-landing', plugins_url('landing.css', __FILE__), [], filemtime(__DIR__.'/landing.css'));
 });
+add_action('enqueue_block_assets',function () {
+    $post=get_post();
+    if (is_admin() && $post && get_post_meta($post->ID,'_bj_landing',true)==='1') {
+        wp_enqueue_style('bj-landing-editor',plugins_url('landing.css',__FILE__),[],filemtime(__DIR__.'/landing.css'));
+    }
+});
 add_filter('document_title_parts', function ($parts) {
     if (bj_landing_enabled()) return ['title'=>'Renta de brincolines en Aguascalientes | Brincolines Jumping'];
     return $parts;
@@ -49,9 +55,17 @@ add_filter('render_block_core/image', function ($html, $block) {
 add_action('wp_head', function () {
     if (!bj_landing_enabled()) return;
     $description='Renta de brincolines en Aguascalientes. Conoce nuestros modelos reales para cumpleaños y fiestas infantiles. Consulta disponibilidad y cotiza por WhatsApp.';
-    $image=wp_get_attachment_image_url(get_post_thumbnail_id(get_queried_object_id()), 'large');
-    $tags=['description'=>$description,'og:title'=>'¡La diversión llega a tu fiesta! · Brincolines Jumping','og:description'=>$description,'og:type'=>'website','og:url'=>home_url('/'),'og:site_name'=>'Brincolines Jumping','og:locale'=>'es_MX','twitter:card'=>'summary_large_image'];
-    if ($image) $tags['og:image']=$image;
+    $social=wp_get_attachment_image_src(get_post_thumbnail_id(get_queried_object_id()), 'large');
+    $image=$social?$social[0]:false;
+    $title='¡La diversión llega a tu fiesta! · Brincolines Jumping';
+    $tags=['description'=>$description,'og:title'=>$title,'og:description'=>$description,'og:type'=>'website','og:url'=>home_url('/'),'og:site_name'=>'Brincolines Jumping','og:locale'=>'es_MX','twitter:card'=>'summary_large_image','twitter:title'=>$title,'twitter:description'=>$description];
+    if ($image) {
+        $tags['og:image']=$image;
+        $tags['og:image:width']=$social[1];
+        $tags['og:image:height']=$social[2];
+        $tags['og:image:alt']=get_post_meta(get_post_thumbnail_id(get_queried_object_id()),'_wp_attachment_image_alt',true);
+        $tags['twitter:image']=$image;
+    }
     foreach ($tags as $key=>$value) echo '<meta '.(strpos($key,'og:')===0?'property':'name').'="'.esc_attr($key).'" content="'.esc_attr($value).'">'."\n";
     $business=['@type'=>'LocalBusiness','@id'=>home_url('/#negocio'),'name'=>'Brincolines Jumping','url'=>home_url('/'),'telephone'=>'+524491911663','areaServed'=>['@type'=>'City','name'=>'Aguascalientes']];
     if ($image) $business['image']=$image;

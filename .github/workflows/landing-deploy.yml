@@ -60,3 +60,18 @@ jobs:
           path: .local/landing/deployment-report.json
           if-no-files-found: ignore
           retention-days: 3
+
+      - name: Comprobar la portada publicada en navegador
+        if: success() && inputs.operation == 'publish'
+        run: |
+          .local/venv/bin/python -m pip install --disable-pip-version-check -r requirements-visual.txt
+          .local/venv/bin/python scripts/check-landing-visual.py
+
+      - name: Evidencia visual pública
+        if: always() && inputs.operation == 'publish'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: landing-public-${{ github.run_id }}
+          path: .local/landing/visual/
+          if-no-files-found: ignore
+          retention-days: 3
