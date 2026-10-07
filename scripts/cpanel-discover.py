@@ -56,9 +56,19 @@ def api_call(user, token, module, function, params, password_auth=False):
     return result.get('data')
 
 
+def normalize_login_password(password):
+    # A pasted secret may end with Enter. Preserve spaces and all password
+    # characters; remove only terminal CR/LF, which are not part of this login.
+    normalized = password.rstrip('\r\n')
+    if '\r' in normalized or '\n' in normalized:
+        raise PanelError('password_contains_embedded_linebreak')
+    return normalized
+
+
 class PanelSession:
     """Keep a verified cPanel web session in memory on the fixed origin only."""
     def __init__(self, user, password):
+        password = normalize_login_password(password)
         self.base = 'https://' + HOST + ':2083'
         # Follow the normal browser login sequence. Keep the pre-login cookie
         # only in memory and explicitly scoped to the same verified origin.

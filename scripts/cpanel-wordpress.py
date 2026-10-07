@@ -103,8 +103,13 @@ def discover(user, password, session_factory=None, inventory_reader=None):
     if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}', user) or not password:
         return dict(report, status='requires_cpanel_credentials')
     try:
+        report['stage'] = 'credential_format'
+        normalized_password = panel.normalize_login_password(password)
+        report['password_terminal_linebreak_removed'] = normalized_password != password
+        if not normalized_password:
+            raise panel.PanelError('empty_password_after_normalization')
         report['stage'] = 'cpanel_login'
-        session = (session_factory or panel.PanelSession)(user, password)
+        session = (session_factory or panel.PanelSession)(user, normalized_password)
         report.update(authenticated=True, tls_verified=True, stage='domain_lookup')
         root = panel.validate_domain(session.api_call('DomainInfo', 'single_domain_data', {'domain': panel.DOMAIN}))
         report['stage'] = 'wordpress_file_verification'

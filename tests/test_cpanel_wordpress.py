@@ -70,6 +70,26 @@ class WordPressPanelTests(unittest.TestCase):
         login.assert_not_called()
         self.assertEqual(report['status'],'requires_cpanel_credentials')
 
+    def test_pasted_terminal_newline_is_removed_without_changing_password(self):
+        login=MagicMock(return_value=scoped_session())
+        report=wp.discover('user','private-password\r\n',session_factory=login,inventory_reader=lambda *args:inventory())
+        login.assert_called_once_with('user','private-password')
+        self.assertTrue(report['password_terminal_linebreak_removed'])
+        self.assertTrue(report['administrative_access_verified'])
+        self.assertNotIn('private-password',json.dumps(report))
+
+    def test_embedded_linebreak_stops_before_authentication(self):
+        login=MagicMock()
+        report=wp.discover('user','private\npassword',session_factory=login)
+        login.assert_not_called()
+        self.assertEqual(report['reason'],'password_contains_embedded_linebreak')
+
+    def test_spaces_in_password_are_preserved(self):
+        login=MagicMock(return_value=scoped_session())
+        report=wp.discover('user',' private-password ',session_factory=login,inventory_reader=lambda *args:inventory())
+        login.assert_called_once_with('user',' private-password ')
+        self.assertTrue(report['administrative_access_verified'])
+
     def test_http_failure_identifies_stage_without_leaking_response(self):
         session=scoped_session()
         session.api_call.side_effect=wp.urllib.error.HTTPError('https://host/cpsess-private',401,'private-password',{},None)
