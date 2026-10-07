@@ -1,6 +1,6 @@
 # Brincolines Jumping · WordPress existente
 
-El sitio de producción es **https://brincolinesjumping.com/**. WP-CLI confirmó **Kadence** como tema activo, portada estática ID **42** y metadatos Elementor presentes. Actualmente no hay plugins activos; antes de editar la portada debe revisarse esa situación y conservarse su contenido y diseño. Este repositorio no instala WordPress ni crea otro tema.
+El sitio de producción es **https://brincolinesjumping.com/**. WP-CLI confirmó **Kadence** como tema activo, portada estática ID **42** y metadatos Elementor presentes. La auditoría inicial encontró una plantilla de demostración sin plugins activos. El complemento pequeño de la landing está ahora activo para su borrador y permanece limitado a las páginas marcadas. Este repositorio no instala WordPress ni crea otro tema.
 
 ## Acceso verificado sin SSH externo
 
