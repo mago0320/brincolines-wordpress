@@ -1,0 +1,62 @@
+name: Brincolines Jumping - Landing manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Operación limitada al WordPress de brincolinesjumping.com
+        type: choice
+        required: true
+        default: draft
+        options:
+          - backup
+          - draft
+          - publish
+          - rollback
+      backup_id:
+        description: ID del respaldo para rollback; detecta cambios posteriores
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: brincolinesjumping-cpanel
+  cancel-in-progress: false
+
+jobs:
+  landing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Validar antes de conectar
+        run: |
+          python3 -m venv .local/venv
+          .local/venv/bin/python -m pip install --disable-pip-version-check -r requirements-ops.txt
+          .local/venv/bin/python -m unittest discover -s tests -p 'test_cpanel*.py' -v
+          .local/venv/bin/python -m unittest discover -s tests -p 'test_landing*.py' -v
+          php -l scripts/landing-operation.php
+          php -l wordpress/brincolines-landing/brincolines-landing.php
+
+      - name: Respaldo y operación manual con dominio verificado
+        env:
+          BH_USER: ${{ secrets.BANAHOST_CPANEL_USER || secrets.BANAHOST_SSH_USER || secrets.BANAHOST_SSH_USERNAME || secrets.BANAHOST_USER || secrets.BANAHOST_USERNAME || secrets.SSH_USER || secrets.SSH_USERNAME }}
+          BH_CPANEL_PASSWORD: ${{ secrets.BANAHOST_CPANEL_PASSWORD || secrets.BANAHOST_PASSWORD || secrets.CPANEL_PASSWORD }}
+          BJ_OPERATION: ${{ inputs.operation }}
+          BJ_BACKUP_ID: ${{ inputs.backup_id }}
+        run: .local/venv/bin/python scripts/landing-deploy.py "$BJ_OPERATION" --backup-id "$BJ_BACKUP_ID"
+
+      - name: Informe sin credenciales ni copia de base de datos
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: landing-${{ github.run_id }}
+          path: .local/landing/deployment-report.json
+          if-no-files-found: ignore
+          retention-days: 3

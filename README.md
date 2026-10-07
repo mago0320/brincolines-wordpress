@@ -12,56 +12,41 @@ El workflow manual **BanaHosting - WordPress por cPanel HTTPS** usa esta vía y 
 
 El cliente sigue el flujo de inicio de sesión del navegador, conservando la cookie previa solo en memoria. Elimina únicamente saltos de línea CR/LF finales que puedan añadirse al pegar la contraseña; conserva espacios y rechaza saltos de línea internos antes de autenticar. El diagnóstico identifica la etapa y señales conocidas del rechazo sin publicar el cuerpo de errores, credenciales ni cookies. Las 26 pruebas de cPanel pasaron tanto localmente como en la ejecución verificada de Actions.
 
-## Acceso desde GitHub Actions
+## Landing móvil con Kadence y Gutenberg
 
-`BanaHosting - localizar WordPress` se ejecuta únicamente con `workflow_dispatch`. Comprueba la identidad SSH, inicia sesión con la clave autorizada en cPanel y busca exactamente el dominio permitido. Primero usa la ruta configurada, si existe; después consulta los metadatos de ese dominio en cPanel y, si no están disponibles, busca instalaciones en HOME. Solo inventaría la coincidencia única de `home` con `brincolinesjumping.com` o `www.brincolinesjumping.com`.
+El WhatsApp confirmado por el propietario es **449 191 1663** (`524491911663`). El catálogo de ocho modelos está en `content/catalog.json`. No se utilizan las tarifas, teléfonos antiguos ni testimonios del mockup.
 
-El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene resultados de conexión y metadatos del sitio. Los informes públicos ocultan usuario, HOME y rutas que pueden identificar la cuenta. Nunca incluyen claves, contraseñas ni el contenido de `wp-config.php`. Durante el descubrimiento solo se consultan metadatos para distinguir instalaciones; no se editan archivos ni bases de datos.
+`wordpress/brincolines-landing/` contiene un complemento pequeño de CSS y SEO aislado. Conserva Kadence y usa bloques nativos editables: grupos, títulos, párrafos, imágenes, botones y acordeones. No incorpora otro constructor, fuentes remotas ni JavaScript propio.
 
-### Secrets compatibles
+El workflow **Brincolines Jumping - Landing manual** se ejecuta únicamente con `workflow_dispatch`. Reutiliza los mismos secrets y transporte HTTPS verificado del inventario anterior. Valida PHP, bloques y restricciones antes de aplicar una operación. Revalida dominio, documentroot, ausencia de multisite, Kadence y portada ID 42.
 
-El endpoint confirmado por el usuario es **single-4650.banahosting.com:22**. El workflow reutiliza `BANAHOST_SSH_HOST`, actualizado por el usuario; si falta, usa ese hostname público como fallback. Prueba primero el puerto 22. Los demás secrets se reutilizan con estos alias.
+| Operación | Efecto |
+| --- | --- |
+| `backup` | Copia privada recuperable de las páginas afectadas, metadatos, opciones y archivos del complemento. |
+| `draft` | Crea o actualiza una página borrador editable; conserva la portada pública. Las fotos pendientes están rotuladas únicamente en este borrador. |
+| `publish` | Importa fotografías reales disponibles, crea variantes en Media Library, reemplaza la portada 42 y retira la página Contact Us de demostración con redirección a `/#contacto`. Requiere la fotografía real principal. |
+| `rollback` | Restaura el respaldo indicado; se detiene si detecta ediciones posteriores. Conserva los archivos añadidos, sin borrarlos. |
 
-El diagnóstico comprueba exclusivamente el host y puerto indicados. No busca puertos alternativos. El input `ssh_host` admite el hostname oficial o su IP `50.31.167.146`. `probe_only=true` hace la comprobación TCP sin intentar autenticación SSH.
+Los respaldos se guardan en una carpeta privada de la cuenta fuera del directorio público, con permisos 700/600 y SHA-256 verificado antes de escribir. Los artifacts de Actions contienen solo el informe resumido y el ID de respaldo, nunca el contenido original, rutas de cuenta, credenciales ni cookies. La copia local privada permanece en `.local/landing/backups/` y está ignorada por Git.
 
-El input manual `ssh_port` permite comprobar un puerto indicado por el usuario. Para un puerto distinto de 22 se comprueba solo ese puerto, incluido 4650; no hace falta editar los secrets ni el workflow para ejecutar esa prueba.
+Antes de publicar, las fotos reales revisadas y optimizadas deben existir en `assets/catalog/<slug>.webp`. Si falta una imagen secundaria se registra como pendiente y no se publica una imagen ficticia ni un recuadro de espera. Si falta el hero real, la publicación se detiene. El cliente genera `srcset`, dimensiones y variantes mediante WordPress; el hero carga inmediatamente y las imágenes inferiores usan lazy loading.
 
-| Uso | Nombre principal | Alias admitidos |
-| --- | --- | --- |
-| Usuario SSH | `BANAHOST_SSH_USER` | `BANAHOST_USER`, `SSH_USER`, `SSH_USERNAME` |
-| Clave privada | `BANAHOST_SSH_PRIVATE_KEY` | `BANAHOST_SSH_KEY`, `BANAHOST_PRIVATE_KEY`, `BANAHOST_KEY`, `SSH_PRIVATE_KEY`, `SSH_KEY` |
-| Ruta opcional de WordPress | `BANAHOST_WP_PATH` | `BANAHOST_PATH`, `WP_PATH`, `SSH_PATH`; también variable `BANAHOST_WP_PATH` |
-| Claves públicas verificadas del servidor | `BANAHOST_SSH_KNOWN_HOSTS` | `BANAHOST_KNOWN_HOSTS`, `SSH_KNOWN_HOSTS` |
-| Alternativa: huella SHA256 verificada del servidor | `BANAHOST_SSH_FINGERPRINT` | `BANAHOST_FINGERPRINT`, `SSH_HOST_FINGERPRINT`, `SSH_FINGERPRINT` |
-| Passphrase, solo si la clave está cifrada | `BANAHOST_SSH_PASSPHRASE` | `BANAHOST_PASSPHRASE`, `SSH_PASSPHRASE` |
+Los enlaces de WhatsApp incluyen el modelo seleccionado. El SEO de la portada contempla un único H1, title, descripción, canonical nativo, Open Graph y datos LocalBusiness/Service con nombre, teléfono y Aguascalientes, sin dirección, estrellas ni horarios inventados.
 
-Las claves autorizadas se obtienen en cPanel → Acceso SSH → Administrar claves SSH. El secret de clave privada contiene la clave completa, incluidos encabezado y cierre; no la clave pública. La confianza del servidor usa `known_hosts` o una huella SHA256 comprobada con BanaHosting. Si falta, el workflow consulta las huellas públicas, las conserva para verificación y se detiene antes de autenticarse. Una clave escaneada no se acepta automáticamente como verificada.
+## Editar sin programar
 
-El diagnóstico previo diferencia DNS, conexión TCP rechazada, timeout, cierre antes de la cabecera y respuesta SSH. Una cabecera SSH demuestra que el servicio es accesible desde ese runner. Un rechazo o timeout por sí solo no prueba que el plan de hosting prohíba SSH: esa política debe confirmarse con BanaHosting.
+En WordPress → Páginas, abre **Brincolines Jumping**. La vista de lista del editor permite encontrar cada sección. Pulsa un texto para editarlo, una imagen para reemplazarla desde Biblioteca de medios o un botón para cambiar su enlace. Guarda el borrador o actualiza la portada según su estado. Las nuevas fotos conservan la composición mediante `object-fit: contain`.
 
-### Alternativa sin SSH: cPanel HTTPS y WordPress REST
-
-`scripts/cpanel-discover.py` comprueba HTTPS con verificación de certificado en el servidor oficial, puerto 2083. Si existe `BANAHOST_CPANEL_API_TOKEN`, reutiliza el usuario cPanel/SSH ya configurado, consulta únicamente los metadatos de `brincolinesjumping.com` y lista su documentroot para detectar archivos WordPress. No modifica archivos ni lee `wp-config.php`. El workflow conserva el resultado; no se envían ni registran valores de tokens.
-
-La API pública de WordPress confirmó soporte para contraseñas de aplicación y endpoints de páginas y plugins. Las operaciones de escritura requieren autenticación y capacidades del usuario. El sitio usa Elementor: no debe reemplazarse su contenido de forma que se pierda el diseño o los metadatos del editor.
-
-La alternativa admite token API o autenticación con contraseña por HTTPS. En una máquina cloud autorizada se puede ejecutar `python3 scripts/cpanel-discover.py --interactive`: ambas entradas quedan ocultas y sus valores se usan solo en memoria para la petición al servidor oficial. Los valores no se escriben en archivos, argumentos de comandos ni informes. En Actions se reutilizan bindings privados `BANAHOST_CPANEL_API_TOKEN` o `BANAHOST_CPANEL_PASSWORD` si ya existen. No se exige crear otra credencial cuando ya se dispone de una utilizable. El flujo inspeccionará las capacidades disponibles antes de decidir si también hace falta autenticación específica de WordPress. No asumas que cPanel permite ejecutar WP-CLI: esa capacidad debe comprobarse en las herramientas realmente disponibles del panel.
-
-El acceso real desde Cloud y Actions se verificó mediante la sesión web de cPanel: autenticación aceptada, dominio y documentroot comprobados y archivos WordPress presentes. Cuando Basic Auth devuelve 401, el script inicia esa sesión con la misma contraseña y consulta la API mediante su cookie en memoria. Solo envía la cookie al origen HTTPS oficial y rechaza redirecciones. Los informes locales tienen permisos privados; los artifacts públicos ocultan las rutas de cuenta.
-
-Los secrets se introducen solo en GitHub → repositorio → Settings → Secrets and variables → Actions; nunca en el código ni en el chat. Si existen únicamente como secrets de un Environment de GitHub, el job debe vincularse a ese Environment antes de usarlos.
-
-## Alcance de administración
-
-El usuario autoriza administrar el WordPress de este dominio, manteniendo el tema actual y realizando ajustes pequeños para completar la web. Esa autorización no se extiende a otros dominios de la cuenta. Antes de cambiar producción, debe verificarse la coincidencia de dominio y guardarse una copia recuperable de los archivos o contenido que se vaya a cambiar. La autorización amplia no exige cambiar componentes que no lo necesitan.
-
-Este primer workflow es exclusivamente de inventario: no instala, actualiza, activa, desactiva ni elimina temas o plugins; no cambia páginas, opciones ni base de datos. No hay despliegues automáticos en cada commit.
-
-## Validación local
+## Validación
 
 ```bash
-bash -n scripts/ssh-discover.sh scripts/discover-wordpress.sh
-python3 -m unittest discover -s tests -v
+.local/venv/bin/python -m unittest discover -s tests -p 'test_cpanel*.py' -v
+.local/venv/bin/python -m unittest discover -s tests -p 'test_landing*.py' -v
+php -l scripts/landing-operation.php
+php -l wordpress/brincolines-landing/brincolines-landing.php
+python3 scripts/build-landing.py --draft
 ```
 
-Las pruebas usan un hosting y WP-CLI simulados para comprobar que los dominios ajenos se excluyen, las rutas se validan y las coincidencias ambiguas se rechazan. La conexión real requiere que el workflow termine correctamente; las pruebas locales por sí solas no la demuestran.
+La validación visual se realiza a 375, 390, 430, 768 y 1440 px, comprobando desbordamientos, un único H1, enlaces, botones táctiles y acordeones con teclado. Una captura de borrador sin fotografías no acredita la apariencia final ni el rendimiento público. Los objetivos LCP, CLS, INP y PageSpeed requieren medición real después de publicar las imágenes.
+
+Los scripts históricos de diagnóstico SSH se conservan como referencia; el acceso operativo es cPanel HTTPS y no requiere probar más puertos ni nuevas credenciales.
