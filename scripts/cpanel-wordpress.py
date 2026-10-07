@@ -95,24 +95,34 @@ def terminal_inventory(session, root, connector=None):
 
 
 def discover(user, password, session_factory=None, inventory_reader=None):
-    report = {'target_domain': panel.DOMAIN, 'authenticated': False, 'administrative_access_verified': False}
+    report = {'target_domain': panel.DOMAIN, 'authenticated': False, 'administrative_access_verified': False,
+              'username_present':bool(user), 'password_present':bool(password),
+              'username_has_boundary_whitespace':user != user.strip(),
+              'password_has_boundary_whitespace':password != password.strip(),
+              'password_contains_linebreak':any(c in password for c in '\r\n')}
     if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}', user) or not password:
         return dict(report, status='requires_cpanel_credentials')
     try:
+        report['stage'] = 'cpanel_login'
         session = (session_factory or panel.PanelSession)(user, password)
+        report.update(authenticated=True, tls_verified=True, stage='domain_lookup')
         root = panel.validate_domain(session.api_call('DomainInfo', 'single_domain_data', {'domain': panel.DOMAIN}))
+        report['stage'] = 'wordpress_file_verification'
         files = session.api_call('Fileman', 'list_files', {'dir': root})
         if not isinstance(files, list):
             raise panel.PanelError('unexpected_directory_listing')
         names = {str(item.get('file', item.get('name', ''))) for item in files if isinstance(item, dict)}
         if not {'wp-load.php', 'wp-settings.php', 'wp-includes', 'wp-content'}.issubset(names):
             raise panel.PanelError('wordpress_files_not_verified')
-        report.update(authenticated=True, tls_verified=True, wordpress_files_verified=True)
+        report.update(wordpress_files_verified=True, stage='wp_cli_inventory')
         result = (inventory_reader or terminal_inventory)(session, root)
         report.update(validate_inventory(result), administrative_access_verified=True,
-                      status='wordpress_inventory_verified', transport='cpanel_https_terminal')
+                      status='wordpress_inventory_verified', stage='complete', transport='cpanel_https_terminal')
     except urllib.error.HTTPError as error:
         report.update(status='http_error', http_status=error.code)
+        reason=getattr(error,'cpanel_reason',None)
+        if reason in {'login_http_rejected','cpanel_credentials_rejected','cpanel_two_factor_required'}:
+            report['reason']=reason
     except panel.PanelError as error:
         report.update(status='administrative_access_blocked', reason=str(error))
     except Exception as error:

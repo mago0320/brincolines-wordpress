@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import json
 from pathlib import Path
 import unittest
@@ -84,13 +85,13 @@ class PanelTests(unittest.TestCase):
     def test_session_cookie_and_token_stay_on_fixed_origin(self):
         response=MagicMock()
         response.__enter__.return_value.headers.get_all.return_value=['cpsession=private-session; path=/; secure; HttpOnly; port=2083']
-        response.__enter__.return_value.read.side_effect=[json.dumps({'status':1,'security_token':'/cpsess123456'}).encode(),json.dumps({'result':{'status':1,'data':[]}}).encode()]
+        response.__enter__.return_value.read.side_effect=[b'<html>Login</html>',json.dumps({'status':1,'security_token':'/cpsess123456'}).encode(),json.dumps({'result':{'status':1,'data':[]}}).encode()]
         with patch.object(panel,'secure_open',return_value=response) as request:
             session=panel.PanelSession('user','private-password')
             session.api_call('Fileman','list_files',{'dir':'/home/user/site'})
             with self.assertRaises(panel.PanelError):
                 session.api_call('Fileman','save_file_content',{})
-        self.assertEqual(request.call_count,2)
+        self.assertEqual(request.call_count,3)
         call=request.call_args.args[0]
         self.assertTrue(call.full_url.startswith('https://'+panel.HOST+':2083/cpsess123456/execute/'))
         self.assertEqual(call.get_header('Cookie'),'cpsession=private-session')
@@ -102,7 +103,30 @@ class PanelTests(unittest.TestCase):
         with patch.object(panel,'secure_open',return_value=response) as request:
             with self.assertRaisesRegex(panel.PanelError,'cpanel_login_rejected'):
                 panel.PanelSession('user','private-password')
-        self.assertEqual(request.call_count,1)
+        self.assertEqual(request.call_count,2)
+
+    def test_prelogin_cookie_follows_browser_login_on_fixed_origin(self):
+        preflight=MagicMock()
+        preflight.__enter__.return_value.headers.get_all.return_value=['cprelogin=private-prelogin; Secure; path=/; port=2083']
+        login=MagicMock()
+        login.__enter__.return_value.headers.get_all.return_value=['cpsession=private-session; Secure; path=/; port=2083']
+        login.__enter__.return_value.read.return_value=json.dumps({'status':1,'security_token':'/cpsess123'}).encode()
+        with patch.object(panel,'secure_open',side_effect=[preflight,login]) as request:
+            panel.PanelSession('user','private-password')
+        call=request.call_args.args[0]
+        self.assertEqual(call.get_header('Cookie'),'cprelogin=private-prelogin')
+        self.assertEqual(call.get_header('Origin'),'https://'+panel.HOST+':2083')
+        self.assertEqual(call.full_url,'https://'+panel.HOST+':2083/login/?login_only=1')
+
+    def test_http_rejection_never_exposes_reflected_credentials(self):
+        preflight=MagicMock()
+        preflight.__enter__.return_value.headers.get_all.return_value=[]
+        error=panel.urllib.error.HTTPError('https://'+panel.HOST+':2083/login/',401,'Unauthorized',{},io.BytesIO(json.dumps({'status':0,'message':'reflected-private-password'}).encode()))
+        with patch.object(panel,'secure_open',side_effect=[preflight,error]) as request:
+            with self.assertRaises(panel.urllib.error.HTTPError) as caught:
+                panel.PanelSession('user','private-password')
+        self.assertEqual(caught.exception.cpanel_reason,'login_http_rejected')
+        self.assertEqual(request.call_count,2)
 
 
 if __name__ == '__main__':

@@ -70,6 +70,16 @@ class WordPressPanelTests(unittest.TestCase):
         login.assert_not_called()
         self.assertEqual(report['status'],'requires_cpanel_credentials')
 
+    def test_http_failure_identifies_stage_without_leaking_response(self):
+        session=scoped_session()
+        session.api_call.side_effect=wp.urllib.error.HTTPError('https://host/cpsess-private',401,'private-password',{},None)
+        report=wp.discover('user','private-password',session_factory=lambda *args:session)
+        self.assertEqual(report['stage'],'domain_lookup')
+        self.assertTrue(report['authenticated'])
+        self.assertEqual(report['http_status'],401)
+        self.assertNotIn('private-password',json.dumps(report))
+        self.assertNotIn('cpsess-private',json.dumps(report))
+
     def test_terminal_verifies_tls_and_keeps_cookie_on_official_endpoint(self):
         session=MagicMock(base='https://'+wp.panel.HOST+':2083',session='/cpsess123',cookie='cpsession=private-cookie')
         socket=MagicMock()

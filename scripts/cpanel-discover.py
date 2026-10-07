@@ -60,14 +60,40 @@ class PanelSession:
     """Keep a verified cPanel web session in memory on the fixed origin only."""
     def __init__(self, user, password):
         self.base = 'https://' + HOST + ':2083'
+        # Follow the normal browser login sequence. Keep the pre-login cookie
+        # only in memory and explicitly scoped to the same verified origin.
+        with secure_open(urllib.request.Request(self.base + '/')) as response:
+            prelogin = SimpleCookie()
+            for header in response.headers.get_all('Set-Cookie', []):
+                prelogin.load(header)
+            response.read(2_000_000)
+        headers = {'Accept': 'application/json', 'Origin': self.base,
+                   'Referer': self.base + '/', 'Content-Type': 'application/x-www-form-urlencoded'}
+        if prelogin.get('cprelogin') and prelogin['cprelogin'].value:
+            headers['Cookie'] = 'cprelogin=' + prelogin['cprelogin'].coded_value
         request = urllib.request.Request(self.base + '/login/?login_only=1',
             data=urllib.parse.urlencode({'user': user, 'pass': password}).encode(),
-            headers={'Accept': 'application/json'})
-        with secure_open(request) as response:
-            cookies = SimpleCookie()
-            for header in response.headers.get_all('Set-Cookie', []):
-                cookies.load(header)
-            payload = json.loads(response.read(2_000_000))
+            headers=headers)
+        try:
+            with secure_open(request) as response:
+                cookies = SimpleCookie()
+                for header in response.headers.get_all('Set-Cookie', []):
+                    cookies.load(header)
+                payload = json.loads(response.read(2_000_000))
+        except urllib.error.HTTPError as error:
+            # Diagnose known rejection classes without logging response bodies,
+            # which can reflect credentials. Never retry a rejected login here.
+            error.cpanel_reason = 'login_http_rejected'
+            try:
+                rejection = json.loads(error.read(32_000))
+                if isinstance(rejection, dict):
+                    if rejection.get('tfa_required') or rejection.get('twofactor_required'):
+                        error.cpanel_reason = 'cpanel_two_factor_required'
+                    elif rejection.get('status') == 0 and rejection.get('message') == 'The login is invalid.':
+                        error.cpanel_reason = 'cpanel_credentials_rejected'
+            except (ValueError, TypeError, OSError):
+                pass
+            raise
         if payload.get('tfa_required') or payload.get('twofactor_required'):
             raise PanelError('cpanel_two_factor_required')
         if payload.get('status') != 1:
