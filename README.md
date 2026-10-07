@@ -12,7 +12,7 @@ El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene usua
 
 El endpoint confirmado por el usuario es **single-4650.banahosting.com:22**. El workflow reutiliza `BANAHOST_SSH_HOST`, actualizado por el usuario; si falta, usa ese hostname público como fallback. Prueba primero el puerto 22. Los demás secrets se reutilizan con estos alias.
 
-Si el puerto 22 no entrega una clave SSH, se comprueba también el puerto 2222 del mismo servidor. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
+El diagnóstico prueba primero 22, después 2222 y finalmente 22022, siempre en el mismo servidor. Si obtiene una cabecera SSH, la conexión reutiliza ese puerto. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
 
 | Uso | Nombre principal | Alias admitidos |
 | --- | --- | --- |

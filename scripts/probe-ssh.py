@@ -58,8 +58,8 @@ def diagnose(host, port):
             unique.append((family, address))
             seen.add((family, address[0]))
     report['dns_addresses'] = [address[0] for _, address in unique]
-    # Bound requests to this host's first four DNS addresses and two SSH ports.
-    for candidate_port in ([22, 2222] if port == 22 else [port]):
+    # Bound requests to this host's first four DNS addresses and three SSH ports.
+    for candidate_port in ([22, 2222, 22022] if port == 22 else [port]):
         for family, original_address in unique[:4]:
             address = (original_address[0], candidate_port, *original_address[2:])
             result = probe_address(family, address)

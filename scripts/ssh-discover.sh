@@ -25,6 +25,21 @@ done
 BH_PORT=${BH_PORT:-22}
 [[ $BH_PORT =~ ^[0-9]{1,5}$ ]] && ((10#$BH_PORT >= 1 && 10#$BH_PORT <= 65535)) || fail 2 'Puerto SSH no válido.'
 
+# Reuse the current run's read-only protocol diagnosis when it found a supported
+# alternate port on this exact host; server identity verification still follows.
+if [[ -f .local/audit/ssh-connectivity.json ]]; then
+  export BH_HOST
+  detected_port=$(python3 - <<'PY'
+import json, os, pathlib
+r=json.loads(pathlib.Path('.local/audit/ssh-connectivity.json').read_text())
+port=r.get('reachable_port')
+if r.get('hostname') == os.environ['BH_HOST'] and r.get('status') == 'ssh_reachable' and port in (22, 2222, 22022):
+    print(port)
+PY
+)
+  if [[ -n $detected_port ]]; then BH_PORT=$detected_port; fi
+fi
+
 state=$(mktemp -d "${RUNNER_TEMP:-/tmp}/brincos-ssh.XXXXXXXX")
 agent_started=0
 cleanup() {

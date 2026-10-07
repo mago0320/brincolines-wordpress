@@ -72,6 +72,12 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(report['reachable_port'], 22)
         self.assertEqual(check.call_count, 1)
 
+    def test_nonstandard_port_is_tried_after_primary_failures(self):
+        with patch.object(probe.socket, 'getaddrinfo', return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 22))]), patch.object(probe, 'probe_address', side_effect=[{'status':'tcp_refused'}, {'status':'tcp_timeout'}, {'status':'ssh_reachable'}]) as check:
+            report = probe.diagnose('example.test', 22)
+        self.assertEqual(report['reachable_port'], 22022)
+        self.assertEqual([call.args[1][1] for call in check.call_args_list], [22,2222,22022])
+
 
 if __name__ == '__main__':
     unittest.main()

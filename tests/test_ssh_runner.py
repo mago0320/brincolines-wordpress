@@ -131,6 +131,19 @@ class SSHRunnerTests(unittest.TestCase):
         args = json.loads(self.arguments.read_text())
         self.assertEqual(args[args.index('-p') + 1], '2222')
 
+    def test_current_run_diagnosis_reuses_nonstandard_port_with_trust_check(self):
+        audit=self.repo / '.local/audit'
+        audit.mkdir(parents=True)
+        (audit / 'ssh-connectivity.json').write_text(json.dumps({'hostname':'example.test','status':'ssh_reachable','reachable_port':22022}))
+        scan = self.bin / 'ssh-keyscan'
+        line=self.host_line.replace('example.test ', '[example.test]:22022 ', 1)
+        scan.write_text('#!/bin/sh\nprintf "%s\\n" ' + shlex.quote(line) + '\n')
+        self.env['BH_FINGERPRINT']=self.fingerprint
+        result=self.run_runner()
+        self.assertEqual(result.returncode,0,result.stderr)
+        args=json.loads(self.arguments.read_text())
+        self.assertEqual(args[args.index('-p')+1],'22022')
+
 
 if __name__ == '__main__':
     unittest.main()
