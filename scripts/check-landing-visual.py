@@ -66,7 +66,8 @@ def main():
                 page.evaluate("async()=>{for(let y=0;y<document.body.scrollHeight;y+=600){scrollTo(0,y);await new Promise(r=>setTimeout(r,60))}scrollTo(0,0)}")
                 page.wait_for_function("[...document.images].every(x=>x.complete && x.naturalWidth>0)",timeout=30000)
             data=page.evaluate('''() => ({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('h1').length,ctas:[...document.querySelectorAll('.wp-block-button__link')].map(a=>({width:a.getBoundingClientRect().width,height:a.getBoundingClientRect().height,href:a.href})),heroCtaBottom:document.querySelector('.bj-hero .wp-block-button__link').getBoundingClientRect().bottom,hero:document.querySelector('.bj-hero-photo img')?{loading:document.querySelector('.bj-hero-photo img').loading,priority:document.querySelector('.bj-hero-photo img').fetchPriority}:null,photoCount:document.querySelectorAll('.bj-landing img').length,pendingPlaceholders:document.querySelectorAll('.bj-pending-photo').length})''')
-            data['floating']=page.locator('.bj-floating').evaluate('''x=>({text:x.textContent.trim(),position:getComputedStyle(x).position,left:x.getBoundingClientRect().left,right:x.getBoundingClientRect().right,bottom:x.getBoundingClientRect().bottom})''')
+            data['floating']=page.locator('.bj-floating').evaluate('''x=>({text:x.textContent.trim(),position:getComputedStyle(x).position,left:x.getBoundingClientRect().left,right:x.getBoundingClientRect().right,top:x.getBoundingClientRect().top,bottom:x.getBoundingClientRect().bottom})''')
+            data['layout']=page.evaluate('''()=>({headerHeight:document.querySelector('.bj-header').getBoundingClientRect().height,catalogColumns:getComputedStyle(document.querySelector('.bj-catalog')).gridTemplateColumns.split(' ').length,galleryColumns:getComputedStyle(document.querySelector('.bj-gallery')).gridTemplateColumns.split(' ').length,heroPhotoBottom:document.querySelector('.bj-hero-photo').getBoundingClientRect().bottom})''')
             data['lab_performance']=lab_performance
             faq=page.locator('.bj-faq details').first
             faq.locator('summary').focus();page.keyboard.press('Enter')
@@ -88,6 +89,11 @@ def main():
         if result['width']<600 and result['heroCtaBottom']>844:failures.append('hero_cta_below_first_screen')
         floating=result['floating']
         if floating['text']!='Contratar ahora' or floating['position']!='fixed' or floating['left']<0 or floating['right']>result['width'] or floating['bottom']>844:failures.append('floating_cta')
+        layout=result['layout']
+        expected_catalog=1 if result['width']<600 else (2 if result['width']<900 else 3)
+        expected_gallery=2 if result['width']<600 else 4
+        if layout['catalogColumns']!=expected_catalog or layout['galleryColumns']!=expected_gallery:failures.append('responsive_grid')
+        if result['width']<600 and (layout['headerHeight']>100 or layout['heroPhotoBottom']>result['heroCtaBottom'] or result['heroCtaBottom']>floating['top']):failures.append('mobile_first_screen')
         if not args.draft_file:
             if result['pendingPlaceholders'] or not result['hero'] or result['hero']['loading']!='eager' or result['hero']['priority']!='high':failures.append('real_hero')
     print(json.dumps({'scope':report['scope'],'widths_tested':[r['width'] for r in results],'passed':not failures,'failure_categories':sorted(set(failures)),'lab_performance':[r['lab_performance'] for r in results] if not args.tls_bridge and not args.draft_file else None}))

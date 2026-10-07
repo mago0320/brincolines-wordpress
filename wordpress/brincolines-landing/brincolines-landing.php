@@ -9,6 +9,11 @@ defined('ABSPATH') || exit;
 function bj_landing_enabled() {
     return (is_front_page() || is_preview()) && get_post_meta(get_queried_object_id(), '_bj_landing', true) === '1';
 }
+// Kadence is a classic theme: Core adds legacy group containers by default.
+// This marked Gutenberg page supplies its own group grid/flex layouts.
+add_action('wp', function () {
+    if (bj_landing_enabled()) remove_filter('render_block_core/group', 'wp_restore_group_inner_container');
+});
 // Kadence's layout filter suppresses its extra H1 and chrome in HTML.
 add_filter('kadence_post_layout', function ($layout) {
     if (!bj_landing_enabled()) return $layout;
@@ -22,7 +27,7 @@ add_filter('body_class', function ($classes) {
 add_action('wp_enqueue_scripts', function () {
     if (!bj_landing_enabled()) return;
     wp_enqueue_style('bj-landing', plugins_url('landing.css', __FILE__), [], filemtime(__DIR__.'/landing.css'));
-});
+}, 30);
 add_action('enqueue_block_assets',function () {
     $post=get_post();
     if (is_admin() && $post && get_post_meta($post->ID,'_bj_landing',true)==='1') {
