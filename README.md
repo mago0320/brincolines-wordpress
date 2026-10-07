@@ -14,6 +14,8 @@ El endpoint confirmado por el usuario es **single-4650.banahosting.com:22**. El 
 
 El diagnóstico prueba primero 22, después 2222 y finalmente 22022, siempre en el mismo servidor. Si obtiene una cabecera SSH, la conexión reutiliza ese puerto. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
 
+El input manual `ssh_port` permite comprobar un puerto indicado por el usuario. Para un puerto distinto de 22 se comprueba solo ese puerto, incluido 4650; no hace falta editar los secrets ni el workflow para ejecutar esa prueba.
+
 | Uso | Nombre principal | Alias admitidos |
 | --- | --- | --- |
 | Usuario SSH | `BANAHOST_SSH_USER` | `BANAHOST_USER`, `SSH_USER`, `SSH_USERNAME` |

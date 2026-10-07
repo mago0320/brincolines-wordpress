@@ -2,6 +2,12 @@ name: BanaHosting - localizar WordPress
 
 on:
   workflow_dispatch:
+    inputs:
+      ssh_port:
+        description: Puerto SSH a comprobar en el servidor autorizado
+        required: true
+        default: '22'
+        type: string
 
 permissions:
   contents: read
@@ -28,7 +34,7 @@ jobs:
       - name: Diagnosticar DNS, TCP y protocolo SSH
         env:
           BH_HOST: ${{ secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
-          BH_PORT: '22'
+          BH_PORT: ${{ inputs.ssh_port || '22' }}
         run: python3 scripts/probe-ssh.py
 
       - name: Conectar por SSH y localizar solo brincolinesjumping.com
@@ -37,7 +43,7 @@ jobs:
           # Reutiliza el secret actualizado; fallback al endpoint público autorizado.
           BH_HOST: ${{ secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
           BH_USER: ${{ secrets.BANAHOST_SSH_USER || secrets.BANAHOST_USER || secrets.SSH_USER || secrets.SSH_USERNAME }}
-          BH_PORT: '22'
+          BH_PORT: ${{ inputs.ssh_port || '22' }}
           BH_KEY: ${{ secrets.BANAHOST_SSH_PRIVATE_KEY || secrets.BANAHOST_SSH_KEY || secrets.BANAHOST_PRIVATE_KEY || secrets.BANAHOST_KEY || secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
           BH_PASSPHRASE: ${{ secrets.BANAHOST_SSH_PASSPHRASE || secrets.BANAHOST_PASSPHRASE || secrets.SSH_PASSPHRASE }}
           BH_KNOWN_HOSTS: ${{ secrets.BANAHOST_SSH_KNOWN_HOSTS || secrets.BANAHOST_KNOWN_HOSTS || secrets.SSH_KNOWN_HOSTS }}

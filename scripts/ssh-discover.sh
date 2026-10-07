@@ -33,7 +33,7 @@ if [[ -f .local/audit/ssh-connectivity.json ]]; then
 import json, os, pathlib
 r=json.loads(pathlib.Path('.local/audit/ssh-connectivity.json').read_text())
 port=r.get('reachable_port')
-if r.get('hostname') == os.environ['BH_HOST'] and r.get('status') == 'ssh_reachable' and port in (22, 2222, 22022):
+if r.get('hostname') == os.environ['BH_HOST'] and r.get('status') == 'ssh_reachable' and port in (22, 2222, 22022, 4650):
     print(port)
 PY
 )

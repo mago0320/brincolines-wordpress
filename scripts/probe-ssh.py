@@ -77,7 +77,10 @@ def main():
     # Diagnostic requests are scoped to the endpoint explicitly authorized.
     if host != 'single-4650.banahosting.com':
         raise SystemExit('Servidor fuera del alcance autorizado del diagnóstico.')
-    report = diagnose(host, int(os.environ.get('BH_PORT', '22')))
+    port = int(os.environ.get('BH_PORT', '22'))
+    if not 1 <= port <= 65535:
+        raise SystemExit('Puerto fuera del intervalo permitido.')
+    report = diagnose(host, port)
     output = Path('.local/audit')
     output.mkdir(parents=True, exist_ok=True)
     (output / 'ssh-connectivity.json').write_text(json.dumps(report, indent=2) + '\n')
