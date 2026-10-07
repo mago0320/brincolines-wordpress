@@ -208,7 +208,9 @@ try {
         }
     }
     wp_save_post_revision($target);
-    $result=wp_update_post(wp_slash(['ID'=>$target,'post_title'=>'Brincolines Jumping','post_content'=>$content,'post_status'=>$operation==='publish'?'publish':'draft','comment_status'=>'closed','ping_status'=>'closed']),true);
+    // Replace the retired Elementor template in the same update. WordPress
+    // otherwise writes the content before rejecting that invalid template.
+    $result=wp_update_post(wp_slash(['ID'=>$target,'post_title'=>'Brincolines Jumping','post_content'=>$content,'post_status'=>$operation==='publish'?'publish':'draft','page_template'=>'default','comment_status'=>'closed','ping_status'=>'closed']),true);
     bj_operation_require(!is_wp_error($result),'page_update_failed');
     update_post_meta($target,'_bj_landing','1');
     update_post_meta($target,'_wp_page_template','default');
@@ -220,7 +222,8 @@ try {
         update_option('blogdescription','Renta de brincolines en Aguascalientes');
         update_option('WPLANG','es_MX');
         if (get_post_type(13)==='page' && get_post_field('post_name',13)==='contact-us') {
-            wp_update_post(['ID'=>13,'post_status'=>'draft']);
+            $contact_result=wp_update_post(['ID'=>13,'post_status'=>'draft','page_template'=>'default'],true);
+            bj_operation_require(!is_wp_error($contact_result),'demo_contact_update_failed');
             $changed[]=13;
         }
     }
