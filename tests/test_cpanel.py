@@ -128,6 +128,13 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(caught.exception.cpanel_reason,'login_http_rejected')
         self.assertEqual(request.call_count,2)
 
+    def test_rejection_signals_never_include_raw_server_text(self):
+        body=b'<html>Request blocked by security policy. Reflected private-password and private-account.</html>'
+        signals=panel.login_rejection_metadata(body)
+        self.assertEqual(signals,['ip_or_security_policy'])
+        self.assertNotIn('private-password',json.dumps(signals))
+        self.assertNotIn('private-account',json.dumps(signals))
+
 
 if __name__ == '__main__':
     unittest.main()

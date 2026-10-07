@@ -65,6 +65,20 @@ def normalize_login_password(password):
     return normalized
 
 
+def login_rejection_metadata(body):
+    """Return fixed diagnostic labels; never return server text or credentials."""
+    text = body.decode('utf-8', errors='replace').lower()
+    flags = {
+        'ip_or_security_policy': bool(re.search(r'cphulk|brute.?force|security policy|ip address.{0,80}(?:block|denied)|blocked.{0,80}ip address', text)),
+        'rate_limit': bool(re.search(r'too many (?:failed )?(?:login|attempt|request)|rate.?limit', text)),
+        'ip_changed': bool(re.search(r'ip address.{0,40}chang', text)),
+        'invalid_login': bool(re.search(r'the login is invalid|invalid (?:login|password|credentials)|incorrect (?:password|credentials)', text)),
+        'two_factor': bool(re.search(r'two.?factor|tfa_required', text)),
+        'origin_or_csrf': bool(re.search(r'csrf|origin.{0,40}(?:invalid|denied|mismatch)', text)),
+    }
+    return [key for key, present in flags.items() if present]
+
+
 class PanelSession:
     """Keep a verified cPanel web session in memory on the fixed origin only."""
     def __init__(self, user, password):
@@ -94,8 +108,11 @@ class PanelSession:
             # Diagnose known rejection classes without logging response bodies,
             # which can reflect credentials. Never retry a rejected login here.
             error.cpanel_reason = 'login_http_rejected'
+            error.cpanel_rejection_signals = []
             try:
-                rejection = json.loads(error.read(32_000))
+                body = error.read(32_000)
+                error.cpanel_rejection_signals = login_rejection_metadata(body)
+                rejection = json.loads(body)
                 if isinstance(rejection, dict):
                     if rejection.get('tfa_required') or rejection.get('twofactor_required'):
                         error.cpanel_reason = 'cpanel_two_factor_required'

@@ -106,6 +106,7 @@ def discover(user, password, session_factory=None, inventory_reader=None):
         report['stage'] = 'credential_format'
         normalized_password = panel.normalize_login_password(password)
         report['password_terminal_linebreak_removed'] = normalized_password != password
+        report['password_has_boundary_whitespace_after_normalization'] = normalized_password != normalized_password.strip()
         if not normalized_password:
             raise panel.PanelError('empty_password_after_normalization')
         report['stage'] = 'cpanel_login'
@@ -128,6 +129,10 @@ def discover(user, password, session_factory=None, inventory_reader=None):
         reason=getattr(error,'cpanel_reason',None)
         if reason in {'login_http_rejected','cpanel_credentials_rejected','cpanel_two_factor_required'}:
             report['reason']=reason
+        signals=getattr(error,'cpanel_rejection_signals',[])
+        if isinstance(signals,list):
+            report['rejection_signals']=[signal for signal in signals if signal in {
+                'ip_or_security_policy','rate_limit','ip_changed','invalid_login','two_factor','origin_or_csrf'}]
     except panel.PanelError as error:
         report.update(status='administrative_access_blocked', reason=str(error))
     except Exception as error:
