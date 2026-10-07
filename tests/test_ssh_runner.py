@@ -116,6 +116,21 @@ class SSHRunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.called.exists())
 
+    def test_alternate_port_still_requires_verified_server_identity(self):
+        scan = self.bin / 'ssh-keyscan'
+        alternate = self.host_line.replace('example.test ', '[example.test]:2222 ', 1)
+        scan.write_text('#!/bin/sh\ncase "$*" in\n*"-p 2222"*) printf "%s\\n" '
+                        + shlex.quote(alternate) + ';;\n*) exit 1;;\nesac\n')
+        result = self.run_runner()
+        self.assertEqual(result.returncode, 3)
+        self.assertIn('puerto alternativo', result.stdout)
+        self.assertFalse(self.called.exists())
+        self.env['BH_FINGERPRINT'] = self.fingerprint
+        result = self.run_runner()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = json.loads(self.arguments.read_text())
+        self.assertEqual(args[args.index('-p') + 1], '2222')
+
 
 if __name__ == '__main__':
     unittest.main()

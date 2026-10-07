@@ -12,6 +12,8 @@ El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene usua
 
 El workflow reutiliza los secrets ya creados. No es necesario recrearlos si usan estos alias.
 
+Si el puerto 22 no entrega una clave SSH, se comprueba también el puerto 2222 del mismo servidor. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
+
 | Uso | Nombre principal | Alias admitidos |
 | --- | --- | --- |
 | Host SSH | `BANAHOST_SSH_HOST` | `BANAHOST_HOST`, `SSH_HOST` |

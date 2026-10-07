@@ -44,18 +44,43 @@ else
   # A scan alone does not establish server identity. Authenticate only after
   # matching a fingerprint independently supplied through GitHub settings.
   if ! ssh-keyscan -T 10 -p "$BH_PORT" -- "$BH_HOST" > "$state/scanned_hosts" 2> "$state/scan-error"; then
+    # Port 2222 is a common shared-hosting SSH endpoint. Only try this same
+    # hostname when port 22 fails; the independent host-key check still applies.
+    if [[ $BH_PORT == 22 ]] && ssh-keyscan -T 10 -p 2222 -- "$BH_HOST" > "$state/alternate_hosts" 2> "$state/alternate-error" && [[ -s $state/alternate_hosts ]]; then
+      BH_PORT=2222
+      cp "$state/alternate_hosts" "$state/scanned_hosts"
+      printf '::notice title=Puerto SSH::Se encontró SSH en el puerto alternativo 2222 del mismo servidor.\n'
+    else
+    export BH_PORT BH_HOST
     reason=$(python3 - "$state/scan-error" <<'PY'
-import pathlib, sys
+import pathlib, socket, sys
 s = pathlib.Path(sys.argv[1]).read_text(errors='replace').lower()
 reasons = (('connection refused', 'El puerto rechaza la conexión.'),
            ('timed out', 'El servidor no respondió dentro del plazo.'),
            ('no route to host', 'No existe ruta de red hacia el servidor.'),
            ('name or service not known', 'El hostname no se pudo resolver.'),
            ('temporary failure in name resolution', 'Falló la resolución DNS.'))
-print(next((text for marker, text in reasons if marker in s), 'No se recibió una clave pública SSH del servidor configurado.'))
+reason = next((text for marker, text in reasons if marker in s), None)
+if reason is None:
+    import os
+    try:
+        with socket.create_connection((os.environ['BH_HOST'], int(os.environ['BH_PORT'])), timeout=10) as connection:
+            connection.settimeout(5)
+            banner = connection.recv(255)
+            reason = 'El puerto responde como SSH, pero falló el intercambio de claves.' if banner.startswith(b'SSH-') else 'El puerto respondió sin una cabecera SSH.'
+    except ConnectionRefusedError:
+        reason = 'El puerto rechaza la conexión TCP.'
+    except (TimeoutError, socket.timeout):
+        reason = 'La conexión TCP o la cabecera SSH agotó el plazo.'
+    except socket.gaierror:
+        reason = 'El hostname no se pudo resolver por DNS.'
+    except OSError as error:
+        reason = 'La conexión TCP falló (errno ' + str(error.errno) + ').'
+print(reason)
 PY
 )
     fail 3 "No se pudo consultar la clave pública del servidor SSH. $reason"
+    fi
   fi
   [[ -s $state/scanned_hosts ]] || fail 3 'El servidor SSH no respondió al consultar su clave pública.'
   ssh-keygen -lf "$state/scanned_hosts" | awk '{print $2}' > .local/audit/host-key-fingerprints.txt
