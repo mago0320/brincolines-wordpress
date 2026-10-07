@@ -131,7 +131,7 @@ def build(config, manifest, draft=False):
     contact = group(contact, 'bj-wrap bj-section', 'contacto', 'section')
     privacy = details('Sobre tu contacto por WhatsApp', 'Al pulsar “Cotizar” abrirás WhatsApp. Brincolines Jumping utilizará la información que compartas en la conversación para atender tu consulta sobre disponibilidad y cotización. Puedes solicitar aclaraciones sobre tus datos en ese mismo número. El uso de WhatsApp se rige también por <a href="https://www.whatsapp.com/legal/privacy-policy">su política de privacidad</a>.', 'bj-privacy')
     footer = group(paragraph('<strong>Brincolines Jumping</strong><br>Diversión para tu fiesta en Aguascalientes.<br>© 2026 Brincolines Jumping.') + paragraph('<a href="#brincolines">Brincolines</a><a href="#preguntas">Preguntas</a><a href="#contacto">Contacto</a>', 'bj-footer-links') + privacy, 'bj-wrap bj-footer', tag='footer')
-    floating = buttons(general, 'WhatsApp · Cotizar', 'bj-floating')
+    floating = buttons(general, 'Contratar ahora', 'bj-floating')
     return group(header + hero + catalog + options + benefits + conversion + gallery + steps + faq + contact + footer + floating, 'bj-landing'), missing
 
 

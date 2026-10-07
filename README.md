@@ -12,11 +12,13 @@ El workflow manual **BanaHosting - WordPress por cPanel HTTPS** usa esta vía y 
 
 El cliente sigue el flujo de inicio de sesión del navegador, conservando la cookie previa solo en memoria. Elimina únicamente saltos de línea CR/LF finales que puedan añadirse al pegar la contraseña; conserva espacios y rechaza saltos de línea internos antes de autenticar. El diagnóstico identifica la etapa y señales conocidas del rechazo sin publicar el cuerpo de errores, credenciales ni cookies. Las 26 pruebas de cPanel pasaron tanto localmente como en la ejecución verificada de Actions.
 
-El nuevo despliegue ya creó un respaldo privado verificado en la [ejecución 37687379662](https://github.com/mago0320/brincolines-wordpress/actions/runs/37687379662) y el borrador Gutenberg **81** en la [ejecución 37687493170](https://github.com/mago0320/brincolines-wordpress/actions/runs/37687493170). La portada pública 42 conserva el contenido original. Está pendiente recibir los archivos originales de las fotografías: las imágenes inline de la conversación no están disponibles como binarios transferibles. El borrador no equivale a una publicación terminada.
+El nuevo despliegue ya creó un respaldo privado verificado en la [ejecución 37687379662](https://github.com/mago0320/brincolines-wordpress/actions/runs/37687379662) y el borrador Gutenberg **81** en la [ejecución 37687493170](https://github.com/mago0320/brincolines-wordpress/actions/runs/37687493170). Los ocho originales recibidos en `fotor.rar` ya se revisaron y recortaron para publicar mediante la operación manual `publish`.
 
 ## Landing móvil con Kadence y Gutenberg
 
 El WhatsApp confirmado por el propietario es **449 191 1663** (`524491911663`). El catálogo de ocho modelos está en `content/catalog.json`. No se utilizan las tarifas, teléfonos antiguos ni testimonios del mockup.
+
+`assets/catalog/` contiene los ocho productos reales con fondo transparente, en WebP: 444,226 bytes en total. Se eliminaron fondos y anuncios externos con máscaras, conservando los píxeles RGB de cada producto; la comparación antes del recorte dio cero diferencias. `provenance.json` registra dimensiones y hashes de los originales y archivos preparados. Los rótulos impresos físicamente en los inflables conservan su aspecto original; todos los enlaces y datos de contacto de la web usan el teléfono nuevo. El botón flotante dice **Contratar ahora** y abre WhatsApp.
 
 `wordpress/brincolines-landing/` contiene un complemento pequeño de CSS y SEO aislado. Conserva Kadence y usa bloques nativos editables: grupos, títulos, párrafos, imágenes, botones y acordeones. No incorpora otro constructor, fuentes remotas ni JavaScript propio.
 
@@ -51,6 +53,6 @@ python3 scripts/build-landing.py --draft
 
 La validación visual se realiza a 375, 390, 430, 768 y 1440 px, comprobando desbordamientos, un único H1, enlaces, botones táctiles y acordeones con teclado. Una captura de borrador sin fotografías no acredita la apariencia final ni el rendimiento público. Los objetivos LCP, CLS, INP y PageSpeed requieren medición real después de publicar las imágenes.
 
-`scripts/check-landing-visual.py` guarda las capturas y comprueba estos criterios en Chromium/Chrome. El workflow lo ejecuta contra la URL real tras `publish`. Para verificaciones locales con navegador se utilizan las dependencias de `requirements-visual.txt`; la opción `--draft-file` identifica explícitamente una vista preliminar y `--tls-bridge` permite comprobaciones visuales mediante HTTP con certificado verificado si Chromium no reconoce la CA del proxy. Esa ruta no mide rendimiento público.
+`scripts/check-landing-visual.py` guarda las capturas y comprueba estos criterios y la posición del botón flotante en Chromium/Chrome. El workflow lo ejecuta contra la URL real tras `publish` y registra LCP/CLS de laboratorio en Chrome sin limitar CPU/red, antes de desplazar la página. Estas muestras no acreditan INP de usuarios reales ni un puntaje PageSpeed. Para verificaciones locales con navegador se utilizan las dependencias de `requirements-visual.txt`; la opción `--draft-file` identifica explícitamente una vista preliminar y `--tls-bridge` permite comprobaciones visuales mediante HTTP con certificado verificado si Chromium no reconoce la CA del proxy. Esa ruta no mide rendimiento público.
 
 Los scripts históricos de diagnóstico SSH se conservan como referencia; el acceso operativo es cPanel HTTPS y no requiere probar más puertos ni nuevas credenciales.

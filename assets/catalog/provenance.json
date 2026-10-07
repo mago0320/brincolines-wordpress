@@ -1,0 +1,98 @@
+[
+  {
+    "slug": "paw-patrol",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "c947b7a3f559b8de0ab5b0ebab99a9d32a1813c5889cd330d07115808bf52664",
+    "webp_sha256": "ac8ff12bf76b8b32eb1338bd7560fd071db43fe0b5481d4acd6e34cb8c72eb07",
+    "width": 1181,
+    "height": 1311,
+    "bytes": 105600,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "mickey-minnie",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "40d3a022a16e7b749f523446868eb3e76555f16cb89bbbc6ff4fce070c33d072",
+    "webp_sha256": "b5b67b5a8492b705397419d34e5b4877db4eb48074e2184e8945e3259c57e330",
+    "width": 920,
+    "height": 539,
+    "bytes": 48680,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "rampa-verde",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "3866ecef34b705aa8163cc8ded3f02e64ff01febc398465f1079bf443863ef1b",
+    "webp_sha256": "62faeebf7e7ffbe11b619dc71ef934b9bfd936b4996ae9b87bf806e52cb2b53a",
+    "width": 817,
+    "height": 547,
+    "bytes": 34698,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "clasico-resbaladilla",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "393eed0d5a1280d95eca881b3234676d1d54585f3402db9afc165bf4f296545b",
+    "webp_sha256": "68567c78883afc3c5614e9f4758032a13babf65048cb1f19eecb73f36bb7121d",
+    "width": 1175,
+    "height": 682,
+    "bytes": 42574,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "frozen",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "ec06231ece33e30d117cda68ae9ee9ea45ce6bae16407476592dac6189200a9c",
+    "webp_sha256": "00d6f6a14ac474111c43a6eeebed5dee79b726435036f30418d6f562411f50c1",
+    "width": 1237,
+    "height": 1282,
+    "bytes": 75928,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "angry-birds",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "fc326ea741336b068720986c45817484c456726377bd61eafd033b8d960a7aa6",
+    "webp_sha256": "ed3159868ca206eea56d8080bc15311d319972ba3680daf4f348c5c596ea0316",
+    "width": 1263,
+    "height": 1252,
+    "bytes": 78870,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "barco-escalador",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "448d1bb9ccadc76c35f1acebf82129b5b3f71543130e9bc2237dfbb495140348",
+    "webp_sha256": "5b5dd0f3265e5f1ada6b8a0ba9e72951668f462bab3ddb47214c0c40d6cf3214",
+    "width": 637,
+    "height": 472,
+    "bytes": 31034,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "toy-story",
+    "source": "User supplied fotor.rar",
+    "source_sha256": "49d48e46b7555616d401e9d765ad12b6da3fb8ff7e256022a0305dce81748670",
+    "webp_sha256": "2809ea831b9afa51aa54ea948320e79c1cdff7f42d468c2c0b6854e7062ca114",
+    "width": 835,
+    "height": 415,
+    "bytes": 26842,
+    "transparent": true,
+    "original_rgb_pixel_difference": 0,
+    "editing": "Background alpha mask and crop; original product pixels preserved."
+  }
+]

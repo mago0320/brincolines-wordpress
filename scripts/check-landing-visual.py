@@ -47,17 +47,27 @@ def main():
             page=browser.new_page(viewport={'width':width,'height':844},is_mobile=width<600,has_touch=width<600)
             errors=[]
             page.on('pageerror',lambda error:errors.append(type(error).__name__))
+            if not args.draft_file and not args.tls_bridge:
+                page.add_init_script('''window.bjPerformance={lcp_ms:null,cls:0};
+                new PerformanceObserver(list=>{for(const entry of list.getEntries())window.bjPerformance.lcp_ms=entry.startTime}).observe({type:'largest-contentful-paint',buffered:true});
+                new PerformanceObserver(list=>{for(const entry of list.getEntries())if(!entry.hadRecentInput)window.bjPerformance.cls+=entry.value}).observe({type:'layout-shift',buffered:true});''')
             if args.tls_bridge:page.route('**/*',tls_bridge)
             if args.draft_file:
                 page.set_content(args.draft_file.read_text(),wait_until='networkidle')
             else:
                 response=page.goto('https://brincolinesjumping.com/',wait_until='networkidle',timeout=60000)
                 if response.status!=200:raise RuntimeError('Public homepage did not return HTTP200')
+            lab_performance=None
+            if not args.draft_file and not args.tls_bridge:
+                page.evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+                lab_performance=page.evaluate('()=>({...window.bjPerformance,scope:"Chrome lab, unthrottled, initial viewport"})')
             # Trigger below-fold lazy images while preserving final screenshot position.
             if not args.draft_file:
                 page.evaluate("async()=>{for(let y=0;y<document.body.scrollHeight;y+=600){scrollTo(0,y);await new Promise(r=>setTimeout(r,60))}scrollTo(0,0)}")
                 page.wait_for_function("[...document.images].every(x=>x.complete && x.naturalWidth>0)",timeout=30000)
             data=page.evaluate('''() => ({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,h1:document.querySelectorAll('h1').length,ctas:[...document.querySelectorAll('.wp-block-button__link')].map(a=>({width:a.getBoundingClientRect().width,height:a.getBoundingClientRect().height,href:a.href})),heroCtaBottom:document.querySelector('.bj-hero .wp-block-button__link').getBoundingClientRect().bottom,hero:document.querySelector('.bj-hero-photo img')?{loading:document.querySelector('.bj-hero-photo img').loading,priority:document.querySelector('.bj-hero-photo img').fetchPriority}:null,photoCount:document.querySelectorAll('.bj-landing img').length,pendingPlaceholders:document.querySelectorAll('.bj-pending-photo').length})''')
+            data['floating']=page.locator('.bj-floating').evaluate('''x=>({text:x.textContent.trim(),position:getComputedStyle(x).position,left:x.getBoundingClientRect().left,right:x.getBoundingClientRect().right,bottom:x.getBoundingClientRect().bottom})''')
+            data['lab_performance']=lab_performance
             faq=page.locator('.bj-faq details').first
             faq.locator('summary').focus();page.keyboard.press('Enter')
             data['faq_keyboard_opens']=faq.evaluate('x=>x.open')
@@ -76,9 +86,11 @@ def main():
         for cta in result['ctas']:
             if cta['width']<44 or cta['height']<44 or not cta['href'].startswith('https://wa.me/524491911663?text='):failures.append('cta')
         if result['width']<600 and result['heroCtaBottom']>844:failures.append('hero_cta_below_first_screen')
+        floating=result['floating']
+        if floating['text']!='Contratar ahora' or floating['position']!='fixed' or floating['left']<0 or floating['right']>result['width'] or floating['bottom']>844:failures.append('floating_cta')
         if not args.draft_file:
             if result['pendingPlaceholders'] or not result['hero'] or result['hero']['loading']!='eager' or result['hero']['priority']!='high':failures.append('real_hero')
-    print(json.dumps({'scope':report['scope'],'widths_tested':[r['width'] for r in results],'passed':not failures,'failure_categories':sorted(set(failures))}))
+    print(json.dumps({'scope':report['scope'],'widths_tested':[r['width'] for r in results],'passed':not failures,'failure_categories':sorted(set(failures)),'lab_performance':[r['lab_performance'] for r in results] if not args.tls_bridge and not args.draft_file else None}))
     return 1 if failures else 0
 
 
