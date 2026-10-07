@@ -6,7 +6,7 @@ El sitio de producción es **https://brincolinesjumping.com/**. Su HTML público
 
 `BanaHosting - localizar WordPress` se ejecuta únicamente con `workflow_dispatch`. Comprueba la identidad SSH, inicia sesión con la clave autorizada en cPanel y busca exactamente el dominio permitido. Primero usa la ruta configurada, si existe; después consulta los metadatos de ese dominio en cPanel y, si no están disponibles, busca instalaciones en HOME. Solo inventaría la coincidencia única de `home` con `brincolinesjumping.com` o `www.brincolinesjumping.com`.
 
-El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene usuario, hostname, HOME, ruta WordPress, dominio, versiones, rutas de temas, tema activo y plugins. Nunca incluye claves, contraseñas ni el contenido de `wp-config.php`. Durante el descubrimiento solo se consultan metadatos para distinguir instalaciones; no se editan archivos ni bases de datos.
+El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene resultados de conexión y metadatos del sitio. Los informes públicos ocultan usuario, HOME y rutas que pueden identificar la cuenta. Nunca incluyen claves, contraseñas ni el contenido de `wp-config.php`. Durante el descubrimiento solo se consultan metadatos para distinguir instalaciones; no se editan archivos ni bases de datos.
 
 ### Secrets compatibles
 
@@ -35,7 +35,7 @@ El diagnóstico previo diferencia DNS, conexión TCP rechazada, timeout, cierre 
 
 La API pública de WordPress confirmó soporte para contraseñas de aplicación y endpoints de páginas y plugins. Las operaciones de escritura requieren autenticación y capacidades del usuario. El sitio usa Elementor: no debe reemplazarse su contenido de forma que se pierda el diseño o los metadatos del editor.
 
-El primer requisito para la alternativa de cPanel es **un token API**, generado en cPanel → Seguridad → Administrar tokens API y guardado en GitHub → Settings → Secrets and variables → Actions como `BANAHOST_CPANEL_API_TOKEN`. El token se introduce solo en ese campo seguro. El flujo automatizado inspeccionará las capacidades disponibles antes de decidir si también hace falta una credencial específica de WordPress. No asumas que un token de cPanel permite ejecutar WP-CLI: esa capacidad debe comprobarse en las herramientas realmente disponibles del panel.
+La alternativa admite token API o autenticación con contraseña por HTTPS. En una máquina cloud autorizada se puede ejecutar `python3 scripts/cpanel-discover.py --interactive`: ambas entradas quedan ocultas y sus valores se usan solo en memoria para la petición al servidor oficial. Los valores no se escriben en archivos, argumentos de comandos ni informes. En Actions se reutilizan bindings privados `BANAHOST_CPANEL_API_TOKEN` o `BANAHOST_CPANEL_PASSWORD` si ya existen. No se exige crear otra credencial cuando ya se dispone de una utilizable. El flujo inspeccionará las capacidades disponibles antes de decidir si también hace falta autenticación específica de WordPress. No asumas que cPanel permite ejecutar WP-CLI: esa capacidad debe comprobarse en las herramientas realmente disponibles del panel.
 
 Los secrets se introducen solo en GitHub → repositorio → Settings → Secrets and variables → Actions; nunca en el código ni en el chat. Si existen únicamente como secrets de un Environment de GitHub, el job debe vincularse a ese Environment antes de usarlos.
 

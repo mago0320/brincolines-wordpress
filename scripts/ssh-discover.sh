@@ -163,7 +163,7 @@ PY
 fi
 
 python3 - <<'PY'
-import json, pathlib
+import json, os, pathlib
 p = pathlib.Path('.local/audit/wordpress-inventory.json')
 report = json.loads(p.read_text())
 assert report['target_domain'] == 'brincolinesjumping.com'
@@ -172,4 +172,8 @@ print('Conexión SSH y dominio verificados. Inventario disponible en el artifact
 print('WordPress:', report['wordpress_version'])
 print('Tema activo:', report['active_stylesheet'])
 print('Plugins inventariados:', len(report['plugins']))
+if os.environ.get('GITHUB_ACTIONS') == 'true':
+    for field in ('ssh_user','home_dir','wordpress_root','content_dir','themes_dir'):
+        if field in report: report[field]='[private]'
+    p.write_text(json.dumps(report,indent=2)+'\n')
 PY

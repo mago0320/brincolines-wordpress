@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Read-only, HTTPS-verified cPanel discovery for one authorized domain."""
 import base64
+import getpass
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
 import ssl
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -77,7 +79,7 @@ def discover(user, token, password=''):
             except urllib.error.HTTPError as error:
                 status = error.code
             report.update(endpoint_reachable=True, tls_verified=True, http_status=status,
-                          status='requires_cpanel_api_token', required_secret='BANAHOST_CPANEL_API_TOKEN')
+                          status='requires_cpanel_authentication')
             return report
         if not re.fullmatch(r'[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}', user):
             raise PanelError('missing_or_invalid_cpanel_user')
@@ -108,7 +110,18 @@ def discover(user, token, password=''):
 
 
 def main():
-    report = discover(os.environ.get('BH_USER', ''), os.environ.get('BH_CPANEL_TOKEN', ''), os.environ.get('BH_CPANEL_PASSWORD', ''))
+    user=os.environ.get('BH_USER', '')
+    token=os.environ.get('BH_CPANEL_TOKEN', '')
+    password=os.environ.get('BH_CPANEL_PASSWORD', '')
+    if '--interactive' in sys.argv:
+        user=getpass.getpass('Usuario cPanel (entrada oculta): ')
+        password=getpass.getpass('Contraseña cPanel (entrada oculta): ')
+        token=''
+    report = discover(user, token, password)
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        # Public repository artifacts must not reveal account names in paths.
+        for field in ('documentroot','wordpress_root_candidate'):
+            if report.get(field): report[field]='[private]'
     output = Path('.local/audit')
     output.mkdir(parents=True, exist_ok=True)
     (output / 'cpanel-discovery.json').write_text(json.dumps(report, indent=2) + '\n')

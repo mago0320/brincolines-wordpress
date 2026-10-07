@@ -37,7 +37,7 @@ class PanelTests(unittest.TestCase):
             report=panel.discover('user','')
         self.assertTrue(report['tls_verified'])
         self.assertFalse(report['authenticated'])
-        self.assertEqual(report['required_secret'],'BANAHOST_CPANEL_API_TOKEN')
+        self.assertEqual(report['status'],'requires_cpanel_authentication')
         self.assertFalse(request.call_args.args[0].has_header('Authorization'))
     def test_tls_checks_are_preserved_in_secure_opener(self):
         with patch.object(panel.urllib.request, 'build_opener') as opener, patch.object(panel.urllib.request, 'HTTPSHandler', wraps=panel.urllib.request.HTTPSHandler) as https:
@@ -56,6 +56,15 @@ class PanelTests(unittest.TestCase):
         self.assertTrue(report['authenticated'])
         self.assertNotIn('password-must-not-be-returned',json.dumps(report))
         self.assertTrue(call.call_args.kwargs['password_auth'])
+
+    def test_public_reports_hide_account_names_in_paths(self):
+        report={'documentroot':'/home/private-account/site','wordpress_root_candidate':'/home/private-account/site','authenticated':True}
+        with patch.dict(panel.os.environ, {'GITHUB_ACTIONS':'true'}), patch.object(panel,'discover',return_value=report), patch.object(panel,'Path') as path, patch('builtins.print') as output:
+            panel.main()
+        written=path.return_value.__truediv__.return_value.write_text.call_args.args[0]
+        self.assertNotIn('private-account',written)
+        self.assertNotIn('private-account',output.call_args.args[0])
+        self.assertIn('[private]',written)
 
     def test_arbitrary_cpanel_operations_are_rejected(self):
         with self.assertRaises(panel.PanelError):
