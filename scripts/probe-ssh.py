@@ -58,8 +58,8 @@ def diagnose(host, port):
             unique.append((family, address))
             seen.add((family, address[0]))
     report['dns_addresses'] = [address[0] for _, address in unique]
-    # Bound requests to this host's first four DNS addresses and three SSH ports.
-    for candidate_port in ([22, 2222, 22022] if port == 22 else [port]):
+    # Only the port explicitly requested; never search for alternate ports.
+    for candidate_port in [port]:
         for family, original_address in unique[:4]:
             address = (original_address[0], candidate_port, *original_address[2:])
             result = probe_address(family, address)
@@ -75,7 +75,7 @@ def diagnose(host, port):
 def main():
     host = os.environ['BH_HOST']
     # Diagnostic requests are scoped to the endpoint explicitly authorized.
-    if host != 'single-4650.banahosting.com':
+    if host not in ('single-4650.banahosting.com', '50.31.167.146'):
         raise SystemExit('Servidor fuera del alcance autorizado del diagnóstico.')
     port = int(os.environ.get('BH_PORT', '22'))
     if not 1 <= port <= 65535:
@@ -85,6 +85,9 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     (output / 'ssh-connectivity.json').write_text(json.dumps(report, indent=2) + '\n')
     print('::notice title=Diagnóstico de transporte SSH::' + json.dumps(report, separators=(',', ':')))
+    if os.environ.get('GITHUB_OUTPUT'):
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+            stream.write('ssh_reachable=' + str(report['status'] == 'ssh_reachable').lower() + '\n')
 
 
 if __name__ == '__main__':

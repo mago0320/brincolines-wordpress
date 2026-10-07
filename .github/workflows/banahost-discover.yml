@@ -3,11 +3,24 @@ name: BanaHosting - localizar WordPress
 on:
   workflow_dispatch:
     inputs:
+      ssh_host:
+        description: Servidor autorizado a comprobar
+        required: true
+        default: single-4650.banahosting.com
+        type: choice
+        options:
+          - single-4650.banahosting.com
+          - '50.31.167.146'
       ssh_port:
         description: Puerto SSH a comprobar en el servidor autorizado
         required: true
         default: '22'
         type: string
+      probe_only:
+        description: Solo una comprobación TCP por dirección, sin autenticación SSH
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -32,16 +45,18 @@ jobs:
           python3 -m unittest discover -s tests -v
 
       - name: Diagnosticar DNS, TCP y protocolo SSH
+        id: transport
         env:
-          BH_HOST: ${{ secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
+          BH_HOST: ${{ inputs.ssh_host || secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
           BH_PORT: ${{ inputs.ssh_port || '22' }}
         run: python3 scripts/probe-ssh.py
 
       - name: Conectar por SSH y localizar solo brincolinesjumping.com
+        if: ${{ !inputs.probe_only && steps.transport.outputs.ssh_reachable == 'true' }}
         env:
           # Admitir nombres habituales sin leer ni imprimir los valores.
           # Reutiliza el secret actualizado; fallback al endpoint público autorizado.
-          BH_HOST: ${{ secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
+          BH_HOST: ${{ inputs.ssh_host || secrets.BANAHOST_SSH_HOST || 'single-4650.banahosting.com' }}
           BH_USER: ${{ secrets.BANAHOST_SSH_USER || secrets.BANAHOST_USER || secrets.SSH_USER || secrets.SSH_USERNAME }}
           BH_PORT: ${{ inputs.ssh_port || '22' }}
           BH_KEY: ${{ secrets.BANAHOST_SSH_PRIVATE_KEY || secrets.BANAHOST_SSH_KEY || secrets.BANAHOST_PRIVATE_KEY || secrets.BANAHOST_KEY || secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
@@ -50,6 +65,13 @@ jobs:
           BH_FINGERPRINT: ${{ secrets.BANAHOST_SSH_FINGERPRINT || secrets.BANAHOST_FINGERPRINT || secrets.SSH_HOST_FINGERPRINT || secrets.SSH_FINGERPRINT }}
           BH_ROOT_HINT: ${{ secrets.BANAHOST_WP_PATH || secrets.BANAHOST_PATH || secrets.WP_PATH || secrets.SSH_PATH || vars.BANAHOST_WP_PATH }}
         run: bash scripts/ssh-discover.sh
+
+      - name: Comprobar alternativa HTTPS de cPanel
+        env:
+          BH_USER: ${{ secrets.BANAHOST_SSH_USER || secrets.BANAHOST_USER || secrets.SSH_USER || secrets.SSH_USERNAME }}
+          BH_CPANEL_TOKEN: ${{ secrets.BANAHOST_CPANEL_API_TOKEN }}
+          BH_CPANEL_PASSWORD: ${{ secrets.BANAHOST_CPANEL_PASSWORD || secrets.BANAHOST_PASSWORD || secrets.CPANEL_PASSWORD }}
+        run: python3 scripts/cpanel-discover.py
 
       - name: Conservar inventario de esta ejecución
         if: always()

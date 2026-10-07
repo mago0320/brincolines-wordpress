@@ -12,7 +12,7 @@ El artifact `banahost-wordpress-inventory-<run_id>` dura un día y contiene usua
 
 El endpoint confirmado por el usuario es **single-4650.banahosting.com:22**. El workflow reutiliza `BANAHOST_SSH_HOST`, actualizado por el usuario; si falta, usa ese hostname público como fallback. Prueba primero el puerto 22. Los demás secrets se reutilizan con estos alias.
 
-El diagnóstico prueba primero 22, después 2222 y finalmente 22022, siempre en el mismo servidor. Si obtiene una cabecera SSH, la conexión reutiliza ese puerto. Esa detección no modifica los secrets ni omite la verificación de identidad del servidor.
+El diagnóstico comprueba exclusivamente el host y puerto indicados. No busca puertos alternativos. El input `ssh_host` admite el hostname oficial o su IP `50.31.167.146`. `probe_only=true` hace la comprobación TCP sin intentar autenticación SSH.
 
 El input manual `ssh_port` permite comprobar un puerto indicado por el usuario. Para un puerto distinto de 22 se comprueba solo ese puerto, incluido 4650; no hace falta editar los secrets ni el workflow para ejecutar esa prueba.
 
@@ -28,6 +28,14 @@ El input manual `ssh_port` permite comprobar un puerto indicado por el usuario. 
 Las claves autorizadas se obtienen en cPanel → Acceso SSH → Administrar claves SSH. El secret de clave privada contiene la clave completa, incluidos encabezado y cierre; no la clave pública. La confianza del servidor usa `known_hosts` o una huella SHA256 comprobada con BanaHosting. Si falta, el workflow consulta las huellas públicas, las conserva para verificación y se detiene antes de autenticarse. Una clave escaneada no se acepta automáticamente como verificada.
 
 El diagnóstico previo diferencia DNS, conexión TCP rechazada, timeout, cierre antes de la cabecera y respuesta SSH. Una cabecera SSH demuestra que el servicio es accesible desde ese runner. Un rechazo o timeout por sí solo no prueba que el plan de hosting prohíba SSH: esa política debe confirmarse con BanaHosting.
+
+### Alternativa sin SSH: cPanel HTTPS y WordPress REST
+
+`scripts/cpanel-discover.py` comprueba HTTPS con verificación de certificado en el servidor oficial, puerto 2083. Si existe `BANAHOST_CPANEL_API_TOKEN`, reutiliza el usuario cPanel/SSH ya configurado, consulta únicamente los metadatos de `brincolinesjumping.com` y lista su documentroot para detectar archivos WordPress. No modifica archivos ni lee `wp-config.php`. El workflow conserva el resultado; no se envían ni registran valores de tokens.
+
+La API pública de WordPress confirmó soporte para contraseñas de aplicación y endpoints de páginas y plugins. Las operaciones de escritura requieren autenticación y capacidades del usuario. El sitio usa Elementor: no debe reemplazarse su contenido de forma que se pierda el diseño o los metadatos del editor.
+
+El primer requisito para la alternativa de cPanel es **un token API**, generado en cPanel → Seguridad → Administrar tokens API y guardado en GitHub → Settings → Secrets and variables → Actions como `BANAHOST_CPANEL_API_TOKEN`. El token se introduce solo en ese campo seguro. El flujo automatizado inspeccionará las capacidades disponibles antes de decidir si también hace falta una credencial específica de WordPress. No asumas que un token de cPanel permite ejecutar WP-CLI: esa capacidad debe comprobarse en las herramientas realmente disponibles del panel.
 
 Los secrets se introducen solo en GitHub → repositorio → Settings → Secrets and variables → Actions; nunca en el código ni en el chat. Si existen únicamente como secrets de un Environment de GitHub, el job debe vincularse a ese Environment antes de usarlos.
 
