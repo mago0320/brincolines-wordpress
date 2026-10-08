@@ -94,5 +94,16 @@
     "transparent": true,
     "original_rgb_pixel_difference": 0,
     "editing": "Background alpha mask and crop; original product pixels preserved."
+  },
+  {
+    "slug": "unicornio",
+    "source": "User supplied unicorn photo, October 8 2026",
+    "source_sha256": "b7fc6d5d177c3d3dc6f77c62e4e2456f5d6e943ac3e67faa89820b95860d6e02",
+    "webp_sha256": "0a48dbcc987e55e0624efba92f53d24c0c23345e3373f59cef9094de8f21f767",
+    "width": 917,
+    "height": 1280,
+    "bytes": 96002,
+    "transparent": false,
+    "editing": "WebP format conversion; original framing retained."
   }
 ]

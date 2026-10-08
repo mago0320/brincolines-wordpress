@@ -70,7 +70,7 @@ class LandingTests(unittest.TestCase):
 
     def test_private_draft_is_explicitly_incomplete(self):
         content,missing=builder.build(CONFIG,{},True)
-        self.assertEqual(len(missing),8)
+        self.assertEqual(len(missing),len(CONFIG['models']))
         self.assertIn('Foto original pendiente',content)
         self.assertNotIn('<!-- wp:image',content)
 

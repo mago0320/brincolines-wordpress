@@ -5,7 +5,8 @@
   "display_phone": "449 191 1663",
   "hero": "mickey-minnie",
   "models": [
-    {"slug":"mickey-minnie","name":"Mickey y Minnie","category":"Con resbaladilla","description":"Una combinación de salto y resbaladilla con Mickey y Minnie. Medidas: 6 × 4 m.","alt":"Brincolín real de Mickey y Minnie con resbaladilla amarilla, roja y azul"},
+    {"slug":"mickey-minnie","name":"Mickey y Minnie","category":"Con resbaladilla","description":"Una combinación de salto y resbaladilla con Mickey y Minnie. Medidas: 6 × 5 m. Precio: $950.","alt":"Brincolín real de Mickey y Minnie con resbaladilla amarilla, roja y azul"},
+    {"slug":"unicornio","name":"Unicornio","category":"Temáticos","description":"Un unicornio lleno de color para tu fiesta. Medidas: 3 × 4 m. Precio: $600.","alt":"Brincolín real de unicornio blanco con cuerno de colores y entrada rosa y morada"},
     {"slug":"rampa-verde","name":"Rampa verde interactiva","category":"Interactivos","description":"Rampa, obstáculos y mucho color para tu celebración.","alt":"Inflable real con rampa verde, obstáculos amarillos y base roja y azul"},
     {"slug":"clasico-resbaladilla","name":"Clásico con resbaladilla","category":"Con resbaladilla","description":"Área de salto y resbaladilla en rojo, amarillo y azul.","alt":"Brincolín real clásico rojo, amarillo y azul con área de salto y resbaladilla"},
     {"slug":"frozen","name":"Castillo Frozen","category":"Temáticos","description":"Un castillo azul y rosa para una fiesta con temática Frozen.","alt":"Brincolín real de Frozen con torres azules, puntas rosas y entrada frontal"},
