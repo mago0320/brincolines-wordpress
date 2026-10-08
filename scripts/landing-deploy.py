@@ -111,6 +111,8 @@ def deploy(session, root, operation, backup_id=''):
         raise panel.PanelError('site_configuration_changed')
     config = json.loads((ROOT / 'content/catalog.json').read_text())
     payload = {'operation': operation, 'release': release()}
+    if operation == 'styles':
+        payload['css'] = (ROOT/'wordpress/brincolines-landing/landing.css').read_text()
     if operation == 'rollback':
         if not re.fullmatch(r'\d{8}T\d{6}Z-[a-f0-9]{12}', backup_id):
             raise panel.PanelError('invalid_backup_id')
@@ -143,7 +145,7 @@ def deploy(session, root, operation, backup_id=''):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=['backup','draft','publish','rollback'])
+    parser.add_argument('operation', choices=['backup','draft','publish','styles','rollback'])
     parser.add_argument('--backup-id', default='')
     parser.add_argument('--interactive', action='store_true')
     args = parser.parse_args()

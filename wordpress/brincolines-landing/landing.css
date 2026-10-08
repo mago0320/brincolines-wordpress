@@ -1,4 +1,27 @@
 /* Portada Gutenberg. Estilos aislados; Kadence permanece como tema activo. */
+/*
+ * WhatsApp SVG: Bootstrap Icons 1.11.3, https://icons.getbootstrap.com/icons/whatsapp/
+ * The MIT License (MIT)
+ * Copyright (c) 2019-2024 The Bootstrap Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 .bj-landing-active,.bj-landing { --bj-blue:#073b9a; --bj-pink:#b91467; --bj-green:#008332; --bj-yellow:#ffe155; --bj-ink:#152c50; --bj-muted:#4c607e; --bj-line:#e2eafa; background:#fff; color:var(--bj-ink); }
 .bj-landing-active #masthead,.bj-landing-active #colophon,.bj-landing-active .entry-header,.bj-landing-active .entry-footer { display:none; }
 .bj-landing-active .site-container,.bj-landing-active .content-container,.bj-landing-active .content-wrap,.bj-landing-active .entry-content-wrap { max-width:none; padding:0; margin:0; width:100%; }
@@ -95,7 +118,9 @@
 .bj-landing .bj-privacy summary { min-height:44px; padding-block:12px; color:var(--bj-blue); font-weight:750; cursor:pointer; }
 .bj-landing .bj-privacy p { max-width:750px; padding-bottom:12px; }
 .bj-landing .bj-floating { position:fixed; z-index:20; right:16px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); }
-.bj-landing .bj-floating .wp-block-button__link { min-height:48px; padding:12px 18px; font-size:.9rem; box-shadow:0 4px 18px #00371433; }
+.bj-landing .bj-floating .wp-block-button__link { min-height:48px; padding:12px 18px; gap:8px; font-size:.9rem; box-shadow:0 4px 18px #00371433; }
+/* Decorative WhatsApp icon; the native button keeps its accessible text. */
+.bj-landing .bj-floating .wp-block-button__link::before { content:""; display:block; width:20px; height:20px; flex:0 0 20px; background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22%23fff%22%3E%3Cpath%20d%3D%22M13.601%202.326A7.85%207.85%200%200%200%207.994%200C3.627%200%20.068%203.558.064%207.926c0%201.399.366%202.76%201.057%203.965L0%2016l4.204-1.102a7.9%207.9%200%200%200%203.79.965h.004c4.368%200%207.926-3.558%207.93-7.93A7.9%207.9%200%200%200%2013.6%202.326zM7.994%2014.521a6.6%206.6%200%200%201-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56%206.56%200%200%201-1.007-3.505c0-3.626%202.957-6.584%206.591-6.584a6.56%206.56%200%200%201%204.66%201.931%206.56%206.56%200%200%201%201.928%204.66c-.004%203.639-2.961%206.592-6.592%206.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73%200%200%200-.529.247c-.182.198-.691.677-.691%201.654s.71%201.916.81%202.049c.098.133%201.394%202.132%203.383%202.992.47.205.84.326%201.129.418.475.152.904.129%201.246.08.38-.058%201.171-.48%201.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat; }
 .bj-landing .bj-pending-photo { min-height:190px; border:2px dashed #96afcb; color:var(--bj-muted); display:grid; place-content:center; text-align:center; padding:20px; border-radius:20px; background:#f4f8fb; }
 .bj-landing .bj-card>.bj-pending-photo { height:255px; }
 @media(min-width:600px) {

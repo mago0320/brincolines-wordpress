@@ -66,7 +66,7 @@ try {
     bj_operation_require(is_string($payload_path) && is_file($payload_path) && !is_link($payload_path),'payload_missing');
     $payload=json_decode(file_get_contents($payload_path),true,512,JSON_THROW_ON_ERROR);
     $operation=$payload['operation'] ?? '';
-    bj_operation_require(in_array($operation,['backup','draft','import','publish','rollback'],true),'operation_rejected');
+    bj_operation_require(in_array($operation,['backup','draft','import','publish','styles','rollback'],true),'operation_rejected');
     bj_operation_require(!is_multisite(),'multisite_rejected');
     foreach(['home','siteurl'] as $key) bj_operation_require(in_array(untrailingslashit(get_option($key)),['https://brincolinesjumping.com','https://www.brincolinesjumping.com'],true),'domain_mismatch');
     bj_operation_require(realpath(ABSPATH)===realpath($payload['verified_root'] ?? ''),'root_mismatch');
@@ -133,6 +133,24 @@ try {
 
     $release=$payload['release'];
     bj_operation_require(preg_match('/^\d{8}T\d{6}Z-[a-f0-9]{12}$/',$release),'invalid_release');
+    if ($operation==='styles') {
+        bj_operation_require(is_plugin_active($plugin) && get_post_meta($front,'_bj_landing',true)==='1','landing_styles_not_ready');
+        bj_operation_require(realpath($plugin_dir)===realpath(WP_PLUGIN_DIR).'/brincolines-landing','plugin_directory_scope');
+        bj_operation_require(strpos(file_get_contents($plugin_dir.'/brincolines-landing.php'),'Brincolines Jumping · Landing')!==false,'existing_plugin_not_owned');
+        $css=$payload['css'] ?? '';
+        bj_operation_require(is_string($css) && strlen($css)>100 && strlen($css)<50000 && strpos($css,'.bj-landing')!==false,'landing_css_rejected');
+        $page_before=get_post($front,ARRAY_A);
+        // A style rollback must not restore pages, unrelated options or PHP.
+        $before=bj_operation_snapshot([],$plugin_dir);
+        $before['options']=array_intersect_key($before['options'],['active_plugins'=>true]);
+        $before['plugin_files']=array_intersect_key($before['plugin_files'],['landing.css'=>true]);
+        $backup_dir=bj_operation_backup($before,$backup_base,$release);
+        bj_operation_write($plugin_dir.'/landing.css',$css,0644);
+        $after=['posts'=>[],'options'=>['active_plugins'=>get_option('active_plugins')],'plugin_files'=>['landing.css'=>hash_file('sha256',$plugin_dir.'/landing.css')]];
+        bj_operation_write($backup_dir.'/after.json',wp_json_encode($after));
+        echo wp_json_encode(['ok'=>true,'operation'=>'styles','backup_id'=>$release,'page_id'=>$front,'page_unchanged'=>$page_before===get_post($front,ARRAY_A),'css_sha256'=>$after['plugin_files']['landing.css'],'domain'=>'brincolinesjumping.com']);
+        return;
+    }
     $draft=(int)get_option('bj_landing_draft_id');
     if ($draft) bj_operation_require(get_post_type($draft)==='page' && get_post_meta($draft,'_bj_preview',true)==='1' && get_post_status($draft)==='draft','draft_page_changed');
     $before=bj_operation_snapshot([$front,13,$draft],$plugin_dir);

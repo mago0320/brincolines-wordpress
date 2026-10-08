@@ -31,6 +31,7 @@ El workflow **Brincolines Jumping - Landing manual** se ejecuta únicamente con 
 | `backup` | Copia privada recuperable de las páginas afectadas, metadatos, opciones y archivos del complemento. |
 | `draft` | Crea o actualiza una página borrador editable; conserva la portada pública. Las fotos pendientes están rotuladas únicamente en este borrador. |
 | `publish` | Importa fotografías reales disponibles, crea variantes en Media Library, reemplaza la portada 42 y retira la página Contact Us de demostración con redirección a `/#contacto`. Requiere la fotografía real principal. |
+| `styles` | Respalda y actualiza únicamente el CSS del complemento propio, conservando las páginas, fotos, opciones y PHP. Su rollback también conserva las páginas. |
 | `rollback` | Restaura el respaldo indicado; se detiene si detecta ediciones posteriores. Conserva los archivos añadidos, sin borrarlos. |
 
 Los respaldos se guardan en una carpeta privada de la cuenta fuera del directorio público, con permisos 700/600 y SHA-256 verificado antes de escribir. Los artifacts de Actions contienen solo el informe resumido y el ID de respaldo, nunca el contenido original, rutas de cuenta, credenciales ni cookies. La copia local privada permanece en `.local/landing/backups/` y está ignorada por Git.
