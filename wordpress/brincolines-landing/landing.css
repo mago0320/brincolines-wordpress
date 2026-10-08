@@ -147,7 +147,7 @@
 }
 @media(prefers-reduced-motion:reduce) { .bj-landing * { scroll-behavior:auto!important; transition:none!important; } }
 
-.bj-landing .bj-brand-logo { flex:0 0 auto; width:88px; }
+.bj-landing .bj-brand-logo { flex:0 0 auto; width:72px; }
 .bj-landing .bj-brand-logo a { display:block; }
 .bj-landing .bj-brand-logo img { display:block; width:100%; height:auto; }
 @media (min-width:768px) { .bj-landing .bj-brand-logo { width:112px; } }
