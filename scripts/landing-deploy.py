@@ -121,7 +121,7 @@ def deploy(session, root, operation, backup_id=''):
         manifest = {}
         if operation == 'publish':
             photos = {}
-            for model in config['models']:
+            for model in config['models'] + [{'slug':'logo','name':'Jumping Inflables','alt':'Logo de Jumping Inflables'}]:
                 path = ROOT / 'assets/catalog' / (model['slug'] + '.webp')
                 if not path.is_file():
                     continue

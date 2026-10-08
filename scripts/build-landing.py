@@ -53,7 +53,7 @@ def validate_manifest(config, manifest, draft=False):
     if not isinstance(manifest, dict):
         raise ValueError('Invalid photo manifest')
     missing = []
-    for model in config['models']:
+    for model in config['models'] + ([{'slug':'logo'}] if 'logo' in manifest else []):
         photo = manifest.get(model['slug'])
         if photo is None:
             missing.append(model['slug'])
@@ -88,7 +88,11 @@ def build(config, manifest, draft=False):
     def section_title(title, subtitle=''):
         return group(heading(title) + (paragraph(subtitle) if subtitle else ''), 'bj-section-heading')
 
-    header = group(paragraph('<a href="#inicio">Brincolines<br><strong>JUMPING</strong></a>', 'bj-brand') + buttons(general, '¡Cotiza ahora!') + details('Menú', '<a href="#brincolines">Brincolines</a><a href="#como-cotizar">Cómo cotizar</a><a href="#preguntas">Preguntas</a><a href="#contacto">Contacto</a>', 'bj-menu'), 'bj-header bj-wrap', tag='header')
+    brand = paragraph('<a href="#inicio">Brincolines<br><strong>JUMPING</strong></a>', 'bj-brand')
+    if 'logo' in manifest:
+        logo = manifest['logo']
+        brand = block('image', '<figure class="wp-block-image size-full bj-brand-logo"><a href="#inicio"><img src="' + html.escape(logo['url'], quote=True) + '" alt="Jumping Inflables — Inicio" class="wp-image-' + str(logo['id']) + '" width="' + str(logo['width']) + '" height="' + str(logo['height']) + '"/></a></figure>', {'id': logo['id'], 'sizeSlug':'full', 'linkDestination':'custom', 'href':'#inicio', 'className':'bj-brand-logo'})
+    header = group(brand + buttons(general, '¡Cotiza ahora!') + details('Menú', '<a href="#brincolines">Brincolines</a><a href="#como-cotizar">Cómo cotizar</a><a href="#preguntas">Preguntas</a><a href="#contacto">Contacto</a>', 'bj-menu'), 'bj-header bj-wrap', tag='header')
     hero_copy = group(paragraph('Fiestas en Aguascalientes', 'bj-eyebrow') + heading('¡La diversión<br><strong>llega a tu fiesta!</strong>', 1) + paragraph('Renta de brincolines en Aguascalientes para cumpleaños, fiestas infantiles y celebraciones.', 'bj-lead') + buttons(general) + group(paragraph('Modelos reales') + paragraph('Cotiza por WhatsApp') + paragraph('Elige tu favorito'), 'bj-pills'), 'bj-hero-copy')
     hero = group(group(hero_copy + photo(config['hero'], 'bj-hero-photo'), 'bj-wrap bj-hero-grid'), 'bj-hero', 'inicio', 'section')
     cards = ''

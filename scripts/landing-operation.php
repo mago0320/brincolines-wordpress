@@ -161,7 +161,7 @@ try {
     }
 
     if ($operation==='import') {
-        $expected=['mickey-minnie','rampa-verde','clasico-resbaladilla','frozen','angry-birds','barco-escalador','toy-story','paw-patrol','unicornio'];
+        $expected=['mickey-minnie','rampa-verde','clasico-resbaladilla','frozen','angry-birds','barco-escalador','toy-story','paw-patrol','unicornio','logo'];
         $photos=$payload['photos'] ?? [];
         bj_operation_require(isset($photos['mickey-minnie']) && !array_diff(array_keys($photos),$expected),'real_hero_photo_required');
         $upload=wp_upload_dir();

@@ -30,6 +30,17 @@ def photos():
 
 
 class LandingTests(unittest.TestCase):
+    def test_header_uses_uploaded_logo_and_rejects_external_logo(self):
+        manifest=photos()
+        manifest['logo']={'id':150,'url':'https://brincolinesjumping.com/wp-content/uploads/2026/10/logo.webp','width':1161,'height':1165}
+        content,missing=builder.build(CONFIG,manifest)
+        self.assertFalse(missing)
+        self.assertIn('bj-brand-logo',content)
+        self.assertIn('<a href="#inicio"><img src="'+manifest['logo']['url'],content)
+        self.assertIn('Jumping Inflables — Inicio',content)
+        manifest['logo']['url']='https://example.com/logo.webp'
+        with self.assertRaises(ValueError):builder.build(CONFIG,manifest)
+
     def test_missing_secondary_photo_does_not_block_real_hero(self):
         manifest=photos()
         del manifest['barco-escalador']

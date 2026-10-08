@@ -105,5 +105,16 @@
     "bytes": 96002,
     "transparent": false,
     "editing": "WebP format conversion; original framing retained."
+  },
+  {
+    "slug": "logo",
+    "source": "User supplied Jumping Inflables logo",
+    "source_sha256": "14bcc899cb76555587ac4ca1b8257e28b7ea9f9b800a28c63e091c85c93e041a",
+    "webp_sha256": "a5debe287526ae9483a92150a0cd9070037961e1c5df87cf61fb5cccb979ac61",
+    "width": 1161,
+    "height": 1165,
+    "bytes": 123858,
+    "transparent": false,
+    "editing": "WebP format conversion; original framing retained."
   }
 ]
